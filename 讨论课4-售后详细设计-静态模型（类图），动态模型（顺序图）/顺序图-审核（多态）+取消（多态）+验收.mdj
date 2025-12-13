@@ -7363,7 +7363,7 @@
 															"top": 47,
 															"width": 159.12890625,
 															"height": 13,
-															"text": ":OnSiteRepairAftersale"
+															"text": ":RepairAftersale"
 														},
 														{
 															"_type": "LabelView",
@@ -7849,7 +7849,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGbDV2NVKUMdI8="
 									},
-									"name": ":OnSiteRepairAftersale",
+									"name": ":RepairAftersale",
 									"represent": {
 										"$ref": "AAAAAAGbDWJclqZPY4M="
 									},
