@@ -1,0 +1,3538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FLYGO · 商户端</title>
+  <style>
+    :root{
+      /* —— 与服务商端保持一致 —— */
+      --bg: linear-gradient(120deg,#eef2ff 0%, #f7f9fe 45%, #ecfeff 100%);
+      --chrome:#0f172a;
+      --chrome-2:#111827;
+      --on-chrome:#e8edff;
+      --panel:#ffffff;
+      --panel-2:#f5f7ff;
+      --border:#7dd3fc;
+      --text:#0f172a;
+      --muted:#64748b;
+      --primary:#4f46e5;
+      --primary-weak:#eef2ff;
+      --accent:#dbeafe;
+      --shadow: 0 10px 30px rgba(79,70,229,.10), 0 2px 10px rgba(15,23,42,.06);
+      --radius: 16px;
+      --shift:-110px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);background-attachment:fixed;color:var(--text);font:14px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}
+    .app{display:grid;grid-template-columns:260px 1fr;grid-template-rows:64px 1fr;grid-template-areas:"header header" "sidebar main";height:100%;}
+    header{grid-area:header;background:linear-gradient(90deg, var(--chrome) 0%, #182135 60%, #1e293b 100%);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(232,237,255,.18);position:sticky;top:0;z-index:5}
+    header .brand{font-weight:800;font-size:18px;letter-spacing:.2px;color:var(--on-chrome);}
+    header .user{display:flex;gap:8px;align-items:center;border:1px solid rgba(232,237,255,.25);padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--on-chrome);backdrop-filter:saturate(140%) blur(6px);}
+    aside{grid-area:sidebar;border-right:1px solid rgba(232,237,255,.18);background:linear-gradient(180deg, var(--chrome) 0%, #121a2d 60%, #182135 100%);overflow:auto;color:var(--on-chrome);}
+    main{grid-area:main;overflow:auto;padding:20px 24px 28px;}
+    /* nav */
+    .nav{padding:12px 10px;}
+    .nav h4{margin:8px 8px 10px;font-size:13px;color:#b7c3ff;}
+    .nav .item{padding:10px 12px;margin:6px 8px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--on-chrome);border:1px solid transparent;transition:all .15s;}
+    .nav .item:hover{background:rgba(255,255,255,.06);border-color:rgba(232,237,255,.18);}
+    .nav .item.active{background:#2b3561;border:1px solid #6b7cff;color:#fff;box-shadow:0 6px 16px rgba(105,117,255,.18) inset;}
+    .crumb{margin:8px 0 12px;color:#475569;}
+    /* chips / buttons / inputs */
+    .tabs{display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap;}
+    .tab{padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer;}
+    .tab.active{background:var(--primary);color:#fff;border-color:var(--primary); box-shadow: var(--shadow);}
+    .view-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;flex-wrap:wrap;}
+    .switch-group{display:flex;gap:8px;flex-wrap:wrap;}
+    .switch-btn{padding:8px 16px;border:1px solid var(--border);border-radius:999px;background:#fff;font-weight:600;color:#334155;cursor:pointer;transition:all .15s;}
+    .switch-btn.active{background:var(--chrome);color:var(--on-chrome);border-color:#2f3b63;box-shadow:var(--shadow);}
+    .view-note{font-size:13px;color:#475569;}
+    .hidden{display:none !important;}
+    .toolbar{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;flex-wrap:wrap;box-shadow:var(--shadow)}
+    input[type="text"], select, input[type="number"], input[type="datetime-local"], input[type="password"]{
+      height:40px;border:1px solid var(--border);border-radius:12px;padding:0 12px;background:#fff;min-width:120px;outline:none;transition:border .15s, box-shadow .15s;
+    }
+    input[type="text"]:focus, select:focus, input[type="number"]:focus, input[type="datetime-local"]:focus, input[type="password"]:focus{border-color:#aab9ff; box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+    textarea{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff;width:100%;min-height:100px;outline:none;transition:border .15s, box-shadow .15s;}
+    textarea:focus{border-color:#aab9ff; box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+    .btn{height:40px;border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;background:#fff;transition:all .15s; font-weight:600;color:#334155;}
+    .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .btn.primary:hover{filter:brightness(.96); transform: translateY(-1px);}
+    .btn.ghost{background:var(--primary-weak);color:#3730a3;border-color:#c7d2fe;}
+    .btn.ghost:hover{background:#e0e7ff;}
+    .btn[disabled]{opacity:.5;cursor:not-allowed;}
+    .stack{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    /* cards / tables */
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+    .section{display:none;}
+    .section.active{display:block;}
+    .kpi{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;}
+    .kpi .box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:10px 12px;min-width:160px;box-shadow:var(--shadow)}
+    .tag{font-size:12px;color:var(--muted);}
+    table{width:100%;border-collapse:separate;border-spacing:0;}
+    thead th{background:var(--panel-2);text-align:left;padding:12px;border-bottom:1px solid var(--border);font-weight:700;color:#334155;}
+    tbody td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+/* 修复：服务与合同 → 合同管理 列错位 */
+#contractSection table{ table-layout: fixed; }
+
+/* 锁定各列宽度（与表头一致）*/
+#contractSection thead th:nth-child(1){ width:120px; }  /* 合同编号 */
+#contractSection thead th:nth-child(2){ width:160px; }  /* 服务商名称 */
+#contractSection thead th:nth-child(4){ width:240px; }  /* 关联商品 */
+#contractSection thead th:nth-child(5){ width:160px; }  /* 服务地区 */
+#contractSection thead th:nth-child(6){ width:220px; }  /* 服务期限 */
+#contractSection thead th:nth-child(7){ width:180px; }  /* 签订时间 */
+#contractSection thead th:nth-child(8){ width:120px; }  /* 状态 */
+#contractSection thead th:nth-child(9){ width:220px; }  /* 操作 */
+/* 第 3 列“服务名称”保持自适应，无需固定 */
+
+/* 溢出省略，避免把列再挤乱 */
+#contractSection td, #contractSection th{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* 允许展示更多信息的列可换行 */
+#contractSection td:nth-child(3),  /* 服务名称 */
+#contractSection td:nth-child(4){  /* 关联商品 */
+  white-space:normal;
+  word-break:break-all;
+}
+
+#svcSection table{ table-layout: fixed; }
+
+/* 锁定每一列的宽度（和表头一致）*/
+#svcSection thead th:nth-child(1){ width:120px; }
+#svcSection thead th:nth-child(3){ width:120px; }
+#svcSection thead th:nth-child(4){ width:240px; }
+#svcSection thead th:nth-child(5){ width:160px; }
+#svcSection thead th:nth-child(6){ width:220px; }
+#svcSection thead th:nth-child(7){ width:120px; }
+#svcSection thead th:nth-child(8){ width:220px; }
+/* 第 2 列（服务名称）保持自适应宽度，无需固定 */
+
+/* 溢出处理，避免把列再次挤乱 */
+#svcSection td, #svcSection th{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* “服务名称”和“适用商品”允许换行展示更多信息 */
+#svcSection td:nth-child(2), #svcSection td:nth-child(6){
+  white-space:normal;
+  word-break:break-all;
+}
+
+    .footer{display:flex;align-items:center;justify-content:space-between;padding:10px;color:var(--muted);}
+    .prod{display:flex;gap:10px;align-items:center;}
+    .thumb{width:40px;height:40px;border-radius:8px;background:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);}
+    .badge{display:inline-flex;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);font-size:12px;}
+    .badge.ok{border-color:#c6f6d5;color:#065f46;background:#ecfdf5;}
+    .badge.warn{border-color:#fde68a;color:#92400e;background:#fffbeb;}
+    .badge.err{border-color:#fecaca;color:#991b1b;background:#fef2f2;}
+    .ops{display:flex;gap:6px;flex-wrap:wrap;}
+    .pill{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer;font-size:12px;}
+    .pill:hover{border-color:#8fa2ff;background:#f0f4ff;}
+    /* overlays */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:stretch;justify-content:flex-end;z-index:20;}
+    .drawer{width:460px;max-width:96vw;background:#fff;height:100%;display:flex;flex-direction:column;border-left:1px solid var(--border);box-shadow:var(--shadow)}
+    .drawer header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff;}
+    .drawer .body{padding:14px 16px;overflow:auto;flex:1;}
+    .drawer .row{margin-bottom:14px;display:flex;flex-direction:column;gap:6px;}
+    .drawer .row label{font-size:13px;color:var(--muted);}
+    .drawer footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:#fff;}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.35);z-index:30;}
+    .modal .card{width:min(980px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .modal header{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:800;background:var(--panel-2);}
+    .modal .content{padding:14px 16px;}
+    .modal footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:linear-gradient(180deg,transparent, #f7f9ff);}
+    .note{font-size:12px;color:var(--muted);}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .divider{height:1px;background:var(--border);margin:10px 0;}
+    .hint{color:var(--muted);font-size:12px;}
+    .toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;padding:10px 12px;border-radius:10px;display:none;z-index:100;}
+    .disabled{opacity:.4;pointer-events:none;}
+
+    /* 登录/注册页（与服务商端一致的风格） */
+    .login-shell{max-width:1100px;margin:18px auto 0;display:grid;grid-template-columns:1.15fr 1fr;gap:20px;align-items:stretch;position:relative;left:var(--shift);}
+    .hero-visual{position:relative;overflow:hidden;border-radius:var(--radius);background:linear-gradient(120deg,#dbeafe 0%,#ffffff 50%,#e0e7ff 100%);border:1px solid var(--border);box-shadow:var(--shadow)}
+    .hero-visual::before{content:"";position:absolute;inset:0;background-image: radial-gradient(1000px 400px at -10% -20%, rgba(79,70,229,.18), transparent 60%), radial-gradient(800px 400px at 110% 120%, rgba(56,189,248,.14), transparent 60%);opacity:.9;pointer-events:none;}
+    .hero-visual .img{position:absolute;inset:0;background-size:cover;background-position:center;background-image:url('assets/login/visual.jpg');opacity:.22;}
+    .hero-visual .copy{position:relative;z-index:2;padding:32px 26px 28px;display:flex;flex-direction:column;height:100%}
+    .logo-badge{display:inline-flex;align-items:center;gap:8px;background:#111827;color:#fff;border-radius:999px;padding:6px 10px;font-weight:800;width:max-content;box-shadow:0 6px 16px rgba(2,6,23,.18)}
+    .hero-title{font-size:28px;font-weight:900;letter-spacing:.3px;margin:14px 0 4px;color:#111827;}
+    .hero-sub{color:#334155;max-width:56ch;}
+    .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:auto}
+    .hero-stats .stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+    .stat .num{font-weight:800;font-size:20px;color:#1f2937}
+    .stat .lab{font-size:12px;color:#64748b}
+    .login-card{padding:24px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow)}
+    .login-card h2{margin:0 0 14px;font-size:22px;letter-spacing:.2px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .full{grid-column:1/-1}
+    .note2{font-size:12px;color:#64748b;margin-top:6px}
+
+    /* 仅左移开户页卡片 */
+.register-shell{
+  max-width:1000px;
+  margin:18px auto 0;
+  position:relative;      /* 修正原来的“位置:relative;” */
+  left:-110px;            /* 想左移多少就写多少像素 */
+  display:grid;
+  gap:12px;
+}
+    .subtle{background:linear-gradient(180deg, #fff, #f9fbff); border:1px dashed var(--border); padding:10px 12px; border-radius:12px;}
+
+    @media (max-width: 980px){
+      :root{ --shift: 0px; }
+      .login-shell{grid-template-columns:1fr;max-width:680px}
+      .hero-visual{order:2}
+      .login-card{order:1}
+      .grid2{grid-template-columns:1fr}
+      header .user{display:none}
+      .register-shell{max-width:680px}
+    }
+
+    /* 运单打印样式（保留） */
+    .waybill{width:820px;margin:0 auto;border:2px dashed #111827;padding:16px;border-radius:12px;background:#fff;}
+    .waybill h3{margin:0 0 8px;}
+    .wb-row{display:flex;gap:12px;margin-bottom:8px;}
+    .wb-box{flex:1;border:1px solid var(--border);padding:10px;border-radius:10px;background:#fff;}
+    .wb-barcode{height:64px;border:1px dashed #999;border-radius:8px;display:flex;align-items:center;justify-content:center;letter-spacing:6px;font-weight:700;}
+    .wb-table{width:100%;border-collapse:collapse;margin-top:6px;}
+    .wb-table th,.wb-table td{border:1px solid #ddd;padding:6px;text-align:left;font-size:13px;}
+    .print-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
+    
+    /* —— 售后管理（新增） —— */
+.af-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.media-grid{display:flex;flex-wrap:wrap;gap:8px}
+.media-grid img,.media-grid video{
+  width:84px;height:84px;object-fit:cover;border-radius:8px;
+  border:1px solid var(--border);background:#fff;
+}
+
+    @media print{
+      body{background:#fff;}
+      header,aside,.toast,.modal footer{display:none !important;}
+      .modal .card{border:none;}
+      .modal .content{padding:0;}
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="appRoot">
+  <header>
+    <div class="brand">FLYGO · 商户端</div>
+    <div class="user" id="userBox">未登录</div>
+  </header>
+  <aside id="sidebar">
+    <div class="nav">
+      <h4>导航</h4>
+      <div class="item active" data-route="products">商品管理</div>
+      <div class="item" data-route="sales">销售管理</div>
+      <div class="item" data-route="activities">活动管理</div>
+      <div class="item" data-route="orders">订单管理</div>
+      <div class="item" data-route="aftersales">售后管理</div>
+      <div class="item" data-route="people">人员与账号</div>
+      <div class="item" data-route="services">服务与合同</div>
+      <div class="item" data-route="finance">支付与账务</div>
+    </div>
+  </aside>
+  <main>
+    <div id="routeTitle" class="crumb">登录</div>
+    <div class="kpi" id="kpiBar"></div>
+
+    <!-- 登录页（新增，与服务商端一致） -->
+    <section id="page-auth" class="section active">
+      <div class="login-shell">
+        <section class="hero-visual">
+          <div class="img" aria-hidden="true"></div>
+          <div class="copy">
+            <span class="logo-badge">FLYGO · 商户生态</span>
+            <h1 class="hero-title">让商户经营更高效</h1>
+            <p class="hero-sub">统一的商品、订单、活动、人员与结算管理。通过平台能力让商户从开户到发货全流程在线化、透明化、可追踪。</p>
+            <div class="hero-stats">
+              <div class="stat"><div class="num">6</div><div class="lab">核心功能</div></div>
+              <div class="stat"><div class="num">7×12h</div><div class="lab">推荐客服响应</div></div>
+              <div class="stat"><div class="num">48h</div><div class="lab">发货目标</div></div>
+              <div class="stat"><div class="num">T+1</div><div class="lab">账务结算</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="login-card">
+          <h2>登录到商户账户</h2>
+          <div class="grid2">
+            <div>
+              <div class="tag">商户名称 *</div>
+              <input id="loginName" type="text" placeholder="例如：极客数码" value="极客数码"/>
+            </div>
+            <div>
+              <div class="tag">管理员账号 *</div>
+              <input id="loginAccount" type="text" placeholder="管理员登录账号" value="admin"/>
+            </div>
+            <div class="full">
+              <div class="tag">登录密码 *</div>
+              <input id="loginPwd" type="password" placeholder="密码" value="******"/>
+            </div>
+            <div class="full stack" style="margin-top:6px">
+              <button class="btn primary" id="btnLogin">直接登录</button>
+              <button class="btn ghost" id="btnGotoRegister">申请开户</button>
+              <span class="note2"></span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- 开户申请页（新增，字段来源用例：开户） -->
+    <section id="page-register" class="section">
+      <div class="register-shell">
+        <div class="panel" style="padding:16px;">
+          <div class="stack" style="justify-content:space-between">
+            <div>
+              <div class="tag">商户开户</div>
+              <div style="font-size:18px;font-weight:800;color:#1f2937">创建新的商户账户</div>
+            </div>
+            <div class="stack"><button class="btn" id="btnBackLogin">← 返回登录</button></div>
+          </div>
+        </div>
+        <div class="panel" style="padding:16px;">
+          <div class="grid2">
+            <div><div class="tag">商户名称 *</div><input id="regName" type="text" placeholder="公司/店铺名称"/></div>
+            <div><div class="tag">联系人姓名 *</div><input id="regContactName" type="text" placeholder="姓名"/></div>
+            <div><div class="tag">联系电话 *</div><input id="regPhone" type="text" placeholder="手机号"/></div>
+            <div><div class="tag">联系邮箱</div><input id="regEmail" type="text" placeholder="邮箱（可选）"/></div>
+            <div class="full"><div class="tag">联系地址 *</div><input id="regAddr" type="text" placeholder="省市区 + 详细地址"/></div>
+            <div><div class="tag">商品数量上限 *</div><input id="regProdLimit" type="number" min="1" placeholder="例如：200"/></div>
+            <div><div class="tag">员工数量上限 *</div><input id="regStaffLimit" type="number" min="1" placeholder="例如：50"/></div>
+            <div class="full"><label class="tag" style="display:inline-flex;align-items:center;gap:6px"><input id="regAgree" type="checkbox"> 我已阅读并同意平台服务协议</label></div>
+            <div class="full stack"><button class="btn ghost" id="btnRegSubmit">提交开户申请并进入</button></div>
+            <div class="full subtle muted">说明：商户开户的必要信息包含：商户名称、联系人信息（姓名、电话、地址）、商品数目上限、商户员工上限；提交后进入审核流程。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 原有主功能页面（保持不变） -->
+    <section id="page-products" class="section">
+      <div class="view-switch">
+        <div class="switch-group" id="productViewToggle">
+          <button class="switch-btn active" data-view="audit">商品审核管理</button>
+          <button class="switch-btn" data-view="shelf">上下架管理</button>
+        </div>
+        <div class="view-note" id="viewNote">查看商品审核状态，无法直接进行上下架操作。</div>
+      </div>
+      <div class="tabs" id="statusTabs"></div>
+      <div class="toolbar">
+        <input id="q" type="text" placeholder="商品名称 / 条码" />
+        <select id="cat"><option value="">全部分类</option></select>
+        <input id="pmin" type="number" min="0" placeholder="最低价" />
+        <input id="pmax" type="number" min="0" placeholder="最高价" />
+        <button class="btn" id="btnSearch">搜索</button>
+        <div style="flex:1"></div>
+        <div class="stack" id="auditActions">
+          <button class="btn primary" id="btnAdd">+ 申请新增商品</button>
+          <button class="btn" id="btnBundle">+ 申请新增捆绑商品</button>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead id="productHead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="footer">
+          <div id="pagerInfo">—</div>
+          <div class="stack">
+            <button class="btn" id="prev">上一页</button>
+            <span id="pageNum" class="tag">1</span>
+            <button class="btn" id="next">下一页</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-sales" class="section">
+      <div class="toolbar">
+  <select id="saleProductFilter"><option value="">全部商品</option></select>
+  <select id="saleTypeFilter"><option value="">全部类型</option><option>普通</option><option>预售</option><option>团购</option></select>
+
+  <input id="saleQ" type="text" placeholder="商品名称 / 销售ID" />
+
+  <span class="tag">开始</span>
+  <input type="datetime-local" id="saleStartFilter" />
+  <span class="tag">结束</span>
+  <input type="datetime-local" id="saleEndFilter" />
+
+  <button class="btn" id="btnSaleSearch">筛选</button>
+  <div style="flex:1"></div>
+  <button class="btn primary" id="btnNewSale">+ 新增销售</button>
+</div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">销售ID</th>
+            <th style="width:220px">商品</th>
+            <th style="width:100px">类型</th>
+            <th style="width:240px">起止时间</th>
+            <th style="width:100px">价格</th>
+            <th style="width:100px">状态</th>
+            <th style="width:240px">活动</th>
+            <th style="width:220px">操作</th>
+          </tr></thead>
+          <tbody id="saleBody"></tbody>
+        </table>
+        <div class="footer"><span class="tag">提示：同一商品的销售时间段不能重叠</span></div>
+      </div>
+    </section>
+
+    <section id="page-activities" class="section">
+      <div class="toolbar">
+  <input type="text" id="actQ" placeholder="活动名称" />
+  <select id="actType">
+    <option value="">全部类型</option>
+    <option>折扣</option>
+    <option>满减</option>
+    <option>优惠</option>
+    <option>团购</option>
+  </select>
+  <span class="tag">开始</span>
+  <input type="datetime-local" id="actStartFilter" />
+  <span class="tag">结束</span>
+  <input type="datetime-local" id="actEndFilter" />
+  <button class="btn" id="btnActSearch">搜索</button>
+  <div style="flex:1"></div>
+  <button class="btn primary" id="btnNewAct">+ 新增活动</button>
+</div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+         <thead>
+  <tr>
+    <th style="width:120px">活动ID</th>
+    <th style="width:220px">名称</th>
+    <th style="width:100px">类型</th>
+    <th style="width:240px">起止时间</th>
+    <th style="width:120px">状态</th>
+    <th style="width:280px">参与销售</th>
+    <th style="width:260px">操作</th>
+  </tr>
+</thead>
+          <tbody id="actBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="page-orders" class="section">
+      <div class="toolbar">
+        <select id="orderStatus">
+          <option value="">全部状态</option>
+          <option>未支付</option>
+          <option>待接受</option>
+          <option>待发货</option>
+          <option>已发货</option>
+          <option>已完成</option>
+        </select>
+        <select id="orderProv">
+          <option value="">全部省份</option>
+          <option>上海</option><option>浙江</option><option>江苏</option><option>北京</option>
+        </select>
+        <select id="orderCity">
+          <option value="">全部城市</option>
+          <option>上海市</option><option>杭州市</option><option>苏州市</option><option>北京市</option>
+        </select>
+        <input id="orderYear" type="number" placeholder="年" style="width:90px"/>
+        <input id="orderMonth" type="number" placeholder="月" style="width:70px"/>
+        <input id="orderDay" type="number" placeholder="日" style="width:70px"/>
+        <button class="btn" id="btnOrderSearch">筛选</button>
+        <div style="flex:1"></div>
+        <input type="text" id="orderQ" placeholder="订单/商品/联系电话" />
+        <button class="btn" id="btnOrderQSearch">搜索</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">订单ID</th>
+            <th style="width:220px">商品</th>
+            <th style="width:120px">状态</th>
+            <th style="width:140px">运单号</th>
+            <th style="width:80px">重量</th>
+            <th style="width:120px">金额</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="orderBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="page-people" class="section">
+<div class="view-switch">
+  <div class="switch-group" id="peopleTabs">
+    <button class="switch-btn active" data-view="emp">员工管理</button>
+    <button class="switch-btn" data-view="account">账号管理</button>
+  </div>
+</div>
+<div id="empPanel">
+
+      <div class="toolbar">
+        <input type="text" id="empQ" placeholder="员工姓名" />
+        <button class="btn" id="btnEmpSearch">搜索</button>
+        <div style="flex:1"></div>
+        <button class="btn primary" id="btnNewEmp">+ 新增员工</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">员工ID</th>
+            <th style="width:160px">姓名</th>
+            <th style="width:160px">角色</th>
+            <th style="width:120px">状态</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="empBody"></tbody>
+        </table>
+        <div class="footer"><span class="tag">部分操作仅管理员可用</span></div>
+      </div>
+    
+</div> <!-- /#empPanel -->
+
+<!-- 账号管理面板（默认隐藏） -->
+<div id="accountPanel" style="display:none">
+  <div class="panel" style="margin-top:12px;">
+    <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
+      <div>
+        <div class="tag">商户名称</div>
+        <div id="accName">—</div>
+      </div>
+      <div>
+        <div class="tag">账号状态</div>
+        <div id="accStatus">—</div>
+      </div>
+
+      <div>
+        <div class="tag">联系人</div>
+        <div id="accContact">—</div>
+      </div>
+      <div>
+        <div class="tag">联系地址</div>
+        <div id="accAddr">—</div>
+      </div>
+
+      <div>
+        <div class="tag">商品数目上限</div>
+        <div id="accProdLimit">—</div>
+      </div>
+      <div>
+        <div class="tag">商户员工上限</div>
+        <div id="accStaffLimit">—</div>
+      </div>
+
+      <div style="grid-column:1/-1">
+        <div class="tag">修改申请状态</div>
+        <div id="accModifyStatus" class="badge">—</div>
+      </div>
+      <div style="grid-column:1/-1">
+        <div class="tag">销户申请状态</div>
+        <div id="accCancelStatus" class="badge">—</div>
+      </div>
+    </div>
+
+    <div class="footer" style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="openAccountModifyModal()">修改账户</button>
+      <button class="btn warn" onclick="openAccountCancelModal()">销户</button>
+    </div>
+  </div>
+</div>
+</section>
+
+
+<!-- ✅ 新增：售后管理页面 -->
+<section id="page-aftersales" class="section">
+  <div class="toolbar">
+    <input type="text" id="afId" placeholder="售后单号" style="min-width:120px"/>
+    <input type="text" id="afOrderId" placeholder="订单ID" style="min-width:120px"/>
+    <input type="text" id="afPhone" placeholder="顾客电话" style="min-width:140px"/>
+    <input type="text" id="afProdQ" placeholder="商品名称" style="min-width:180px"/>
+
+    <select id="afStatus" style="min-width:120px">
+      <option value="">全部状态</option>
+      <option>待审核</option>
+      <option>已审核</option>
+      <option>已取消</option>
+      <option>已验收</option>
+    </select>
+
+    <select id="afProv" style="min-width:120px">
+      <option value="">全部省份</option>
+      <option>上海</option><option>浙江</option><option>江苏</option><option>北京</option>
+    </select>
+    <select id="afCity" style="min-width:120px">
+      <option value="">全部城市</option>
+      <option>上海市</option><option>杭州市</option><option>苏州市</option><option>北京市</option>
+    </select>
+
+    <button class="btn" id="btnAfSearch">筛选</button>
+  </div>
+
+  <div class="panel" style="margin-top:12px;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:140px">售后单号</th>
+          <th style="width:120px">订单ID</th>
+          <th style="width:220px">商品</th>
+          <th style="width:100px">售后类型</th>
+          <th style="width:180px">提交时间</th>
+          <th style="width:120px">状态</th>
+          <th style="width:160px">地区</th>
+          <th style="width:300px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="afBody"></tbody>
+    </table>
+  </div>
+</section>
+
+
+    <!-- ✅ 替换后的“服务与合同”二级页面 -->
+    <section id="page-services" class="section">
+      <!-- 顶部二级标签 -->
+      <div class="tabs" id="svcTabBar" style="margin-bottom:10px;">
+        <div class="tab active" data-tab="service">服务管理</div>
+        <div class="tab" data-tab="contract">合同管理</div>
+      </div>
+
+      <!-- 服务管理 -->
+      <section id="svcSection">
+        <div class="toolbar">
+          <input id="svcSearch" type="text" placeholder="搜索服务名称 / 服务商 / 适用商品" style="min-width:220px" />
+          <select id="svcTypeFilter" style="min-width:140px">
+            <option value="">全部类型</option>
+            <option>维修</option><option>物流</option><option>仓储</option><option>其他</option>
+          </select>
+          <input id="svcRegion" type="text" placeholder="服务地区（可选）" style="min-width:160px" />
+          <div style="flex:1"></div>
+          <button class="btn" id="btnExportSvc">导出</button>
+          <button class="btn primary" id="btnNewService">+ 新增服务</button>
+        </div>
+        <div class="panel" style="margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:120px">服务ID</th>
+                <th>服务名称</th>
+                <th style="width:120px">类型</th>
+                <th style="width:240px">起止时间</th>
+                <th style="width:160px">地区</th>
+                <th style="width:220px">适用商品</th>
+                <th style="width:120px">状态</th>
+                <th style="width:220px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="svcMgmtBody"></tbody>
+          </table>
+          <div class="note">提示：点击“取消服务”将状态设为“已取消”；可再次恢复。</div>
+        </div>
+      </section>
+
+      <!-- 合同管理 -->
+      <section id="contractSection" class="hidden">
+        <div class="toolbar">
+<select id="contractStatusFilter" style="min-width:140px">
+  <option value="">全部状态</option>
+  <option>待确认</option>
+  <option>已确认</option>
+  <option>已拒绝</option>
+  <option>暂停中</option>
+  <option>已取消</option>
+</select>
+
+
+          <input id="contractQ" type="text" placeholder="搜索合同/服务/服务商/地点" style="min-width:240px" />
+          <div style="flex:1"></div>
+          <button class="btn" id="btnExportContract">导出</button>
+          <button class="btn primary" id="btnNewContract">+ 新增合同</button>
+        </div>
+        <div class="panel" style="margin-top:12px;">
+          <table>
+<thead>
+  <tr>
+    <th style="width:120px">合同编号</th>
+    <th style="width:160px">服务商名称</th>
+    <th>服务名称</th>
+    <th style="width:240px">关联商品</th>
+    <th style="width:160px">服务地区</th>
+    <th style="width:220px">服务期限</th>
+    <th style="width:180px">签订时间</th>
+    <th style="width:120px">状态</th>
+    <th style="width:220px">操作</th>
+  </tr>
+</thead>
+
+            <tbody id="contractMgmtBody"></tbody>
+          </table>
+          <div class="note">说明：合同包含服务商品、时间、地点、服务商、状态与备注等信息。</div>
+        </div>
+      </section>
+
+      <!-- 兼容：隐藏旧UI挂钩（避免原脚本对旧ID绑定时报错） -->
+      <div style="display:none">
+        <input type="text" id="svcQ" />
+        <button class="btn" id="btnSvcSearch">搜索</button>
+        <table><tbody id="svcBody"></tbody></table>
+      </div>
+    </section>
+
+    <section id="page-finance" class="section">
+      <div class="toolbar">
+        <select id="finType"><option value="">全部类型</option><option>付款</option><option>退款</option></select>
+        <button class="btn" id="btnFinSearch">筛选</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">单据ID</th>
+            <th style="width:160px">类型</th>
+            <th style="width:160px">订单ID</th>
+            <th style="width:120px">金额</th>
+            <th style="width:120px">状态</th>
+            <th style="width:220px">操作</th>
+          </tr></thead>
+          <tbody id="finBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 复用原有抽屉/模态 -->
+<div class="overlay" id="drawerAdd">
+  <div class="drawer">
+    <header><div>新增商品（申请）</div><button class="btn" onclick="closeDrawer('drawerAdd')">关闭</button></header>
+    <div class="body">
+      <div class="row"><label>分类 *</label><select id="fCat"></select></div>
+      <div class="row"><label>商品名称 *</label><input type="text" id="fName" placeholder="例如：蓝牙耳机 Pro" /></div>
+      <div class="grid">
+        <div class="row"><label>原价 *</label><input type="number" id="fPrice" min="0" step="0.01" /></div>
+        <div class="row"><label>单位 *</label><input type="text" id="fUnit" placeholder="件 / 箱 ..." /></div>
+      </div>
+      <div class="grid">
+        <div class="row"><label>产地 *</label><input type="text" id="fOrigin" placeholder="中国" /></div>
+        <div class="row"><label>条码 *</label><input type="text" id="fBarcode" placeholder="6920******123" /></div>
+      </div>
+      <div class="row"><label>分账比例 *</label><input type="text" id="fShare" placeholder="商户70% / 平台30%" /><div class="hint">示例：商户70% / 平台30%</div></div>
+      <div class="divider"></div><div class="note">提交后进入<span class="badge warn">审核中</span>，平台审核通过后方可上架。</div>
+    </div>
+    <footer><button class="btn" onclick="closeDrawer('drawerAdd')">取消</button><button class="btn primary" onclick="submitAdd()">提交申请</button></footer>
+  </div>
+</div>
+
+<div class="modal" id="modalView">
+  <div class="card">
+    <header id="viewTitle">详情</header>
+    <div class="content" id="viewBody"></div>
+    <footer><button class="btn" onclick="closeModal('modalView')">关闭</button></footer>
+  </div>
+</div>
+
+<div class="modal" id="modalAttr">
+  <div class="card">
+    <header>修改商品属性（仅对已核准商品开放）</header>
+    <div class="content">
+      <div class="note">可修改：相关商品、运费计算、配送物流、重量、SKU 等。</div>
+      <div class="grid">
+        <div class="row"><label>SKU</label><input type="text" id="mSku" placeholder="SKU-0001" /></div>
+        <div class="row"><label>重量（kg）</label><input type="number" id="mWeight" min="0" step="0.01" /></div>
+      </div>
+      <div class="row"><label>配送物流</label><input type="text" id="mLogistics" placeholder="顺丰 / 邮政 ..." /></div>
+      <div class="row"><label>运费计算</label><input type="text" id="mFreight" placeholder="包邮 / 首重+续重 ..." /></div>
+      <div class="note">提示：保存仅修改商品属性，不影响上架状态。</div>
+    </div>
+    <footer><button class="btn" onclick="closeModal('modalAttr')">取消</button><button class="btn primary" onclick="saveAttr()">保存</button></footer>
+  </div>
+</div>
+
+<!-- 替换后的上架弹窗 -->
+<div class="modal" id="modalPublish">
+  <div class="card">
+    <header>填写销售信息后上架</header>
+    <div class="content">
+      <div class="note">根据平台要求，上架前需要补充销售类型与相关信息；提交后会同步到“销售管理”，并校验该商品销售时间段不重叠。</div>
+
+      <!-- 销售类型 -->
+      <div class="row">
+        <label>销售类型 *</label>
+        <select id="publishType">
+          <option>普通</option>
+          <option>预售</option>
+          <option>团购</option>
+        </select>
+      </div>
+
+      <!-- 销售渠道 -->
+      <div class="row">
+        <label>销售渠道 *</label>
+        <select id="publishChannel">
+          <option>线上商城</option>
+          <option>小程序专供</option>
+          <option>线下门店</option>
+          <option>经销批发</option>
+        </select>
+      </div>
+
+      <!-- 普通 / 团购 共用字段 -->
+      <div id="publishNormalFields">
+        <div class="grid">
+          <div class="row"><label>销售价格 *</label><input type="number" id="publishPrice" min="0" step="0.01" /></div>
+          <div class="row"><label>销售总数（库存）*</label><input type="number" id="publishStock" min="1" step="1" /></div>
+        </div>
+        <div class="grid">
+          <div class="row"><label>开始时间 *</label><input type="datetime-local" id="publishStart" /></div>
+          <div class="row"><label>结束时间 *</label><input type="datetime-local" id="publishEnd" /></div>
+        </div>
+        <div class="row"><label>单次允许购买数</label><input type="number" id="publishLimit" min="0" step="1" placeholder="0 表示不限购" /></div>
+        <div class="row"><label>销售备注</label><textarea id="publishRemark" rows="2" placeholder="例：仅支持江浙沪快递 / 需实名购买"></textarea></div>
+      </div>
+
+      <!-- 预售字段 -->
+      <div id="publishPresaleFields" class="hidden">
+        <div class="grid">
+          <div class="row"><label>预售开始时间 *</label><input type="datetime-local" id="publishPreStart" /></div>
+          <div class="row"><label>预售结束时间 *</label><input type="datetime-local" id="publishPreEnd" /></div>
+        </div>
+        <div class="grid">
+          <div class="row"><label>定金价格 *</label><input type="number" id="publishDeposit" min="0" step="0.01" /></div>
+          <div class="row"><label>尾款价格 *</label><input type="number" id="publishFinal" min="0" step="0.01" /></div>
+        </div>
+        <div class="row"><label>开始支付尾款时间 *</label><input type="datetime-local" id="publishTailPayStart" /></div>
+        <div class="grid">
+          <div class="row"><label>销售总数（库存）*</label><input type="number" id="publishPreStock" min="1" step="1" /></div>
+          <div class="row"><label>单次允许购买数</label><input type="number" id="publishPreLimit" min="0" step="1" placeholder="0 表示不限购" /></div>
+        </div>
+        <div class="row"><label>销售备注</label><textarea id="publishPreRemark" rows="2" placeholder="例：预售商品发货时间以页面说明为准"></textarea></div>
+      </div>
+    </div>
+    <footer><button class="btn" onclick="closePublishModal()">取消</button><button class="btn primary" onclick="submitPublish()">确认上架</button></footer>
+  </div>
+</div>
+
+
+<div class="modal" id="modalChange">
+  <div class="card">
+    <header>商品变更申请</header>
+    <div class="content">
+      <div class="note">补充完整的变更类型、原因与联系人信息，便于平台审核。</div>
+      <div class="row">
+        <label>变更类型 *</label>
+        <select id="changeType">
+          <option>价格调整</option>
+          <option>属性优化</option>
+          <option>信息纠错</option>
+          <option>库存/物流</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="row"><label>涉及字段 *</label><input type="text" id="changeField" placeholder="例：原价、分账比例、产地信息" /><label>         变更内容 *</label><input type="text" id="changeField" placeholder="变更后内容" /></div>
+      <div class="grid">
+        <div class="row"><label>期望生效日 *</label><input type="date" id="changeDate" /></div>
+        <div class="row">
+          <label>优先级 *</label>
+          <select id="changePriority">
+            <option>一般</option>
+            <option>紧急</option>
+            <option>低</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="row"><label>联系人 *</label><input type="text" id="changeContact" placeholder="负责对接的人员姓名" /></div>
+        <div class="row"><label>联系电话 *</label><input type="tel" id="changePhone" placeholder="手机 / 座机" /></div>
+      </div>
+      <div class="row"><label>变更原因 *</label><textarea id="changeReason" rows="3" placeholder="说明变更背景、目的及影响"></textarea></div>
+      <div class="row"><label>补充说明</label><textarea id="changeNote" rows="2" placeholder="可补充样品、佐证材料链接等"></textarea></div>
+      <div class="note">提交后商品将重新进入审核，请耐心等待平台反馈。</div>
+    </div>
+    <footer><button class="btn" onclick="closeChangeModal()">取消</button><button class="btn primary" onclick="submitChange()">提交变更</button></footer>
+  </div>
+</div>
+
+<div class="modal" id="modalBundle">
+  <div class="card">
+    <header>申请新增捆绑商品</header>
+    <div class="content">
+      <div class="note">只能选择 <b>已核准</b> 的商品进行捆绑；为每个子商品设置数量与分账比例。若仅包含 1 个商品，数量必须 &gt; 1；若包含多个商品，各子商品分账比例之和必须为 100%。</div>
+      <div class="grid">
+        <div>
+          <div style="font-weight:600;margin:8px 0">可选商品（已核准）</div>
+          <div class="panel" style="max-height:280px;overflow:auto;">
+            <table><thead><tr><th style="width:40px"></th><th>商品</th><th style="width:120px">分类</th><th style="width:100px">原价</th></tr></thead><tbody id="bundlePool"></tbody></table>
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:600;margin:8px 0">已选择</div>
+          <div class="panel" style="max-height:280px;overflow:auto;">
+            <table><thead><tr><th>商品</th><th style="width:120px">数量</th><th style="width:140px">分账比例(%)</th><th style="width:80px">操作</th></tr></thead><tbody id="bundleChosen"></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="row"><label>新捆绑商品名称 *</label><input id="bundleName" type="text" placeholder="蓝牙耳机 Pro 捆绑装" /></div>
+      <div class="grid">
+        <div class="row"><label>商品分类 *</label><select id="bundleCat"></select></div>
+        <div class="row"><label>产地 *</label><input id="bundleOrigin" type="text" placeholder="中国"/></div>
+      </div>
+      <div class="grid">
+        <div class="row"><label>原价 *</label><input id="bundlePrice" type="number" min="0" step="0.01"/></div>
+        <div class="row"><label>单位 *</label><input id="bundleUnit" type="text" placeholder="件"/></div>
+      </div>
+      <div class="row"><label>条码 *</label><input id="bundleBarcode" type="text" placeholder="例如：6920******123"/></div>
+      <div class="row"><label>分账比例（整体） *</label><input id="bundleShare" type="text" placeholder="商户70% / 平台30%" /></div>
+      <div class="note">提交后进入 <span class="badge warn">审核中</span>。</div>
+    </div>
+    <footer><button class="btn" onclick="closeModal('modalBundle')">取消</button><button class="btn primary" onclick="submitBundle()">提交申请</button></footer>
+  </div>
+</div>
+
+<div class="modal" id="modalSale">
+  <div class="card">
+    <header>新增销售</header>
+    <div class="content">
+      <div class="grid">
+        <div class="row"><label>商品 *</label><select id="saleProduct"></select></div>
+        <div class="row"><label>类型 *</label><select id="saleType"><option>普通</option><option>预售</option><option>团购</option></select></div>
+      </div>
+      <div class="grid">
+        <div class="row"><label>开始时间 *</label><input type="datetime-local" id="saleStart" /></div>
+        <div class="row"><label>结束时间 *</label><input type="datetime-local" id="saleEnd" /></div>
+      </div>
+      <div class="row"><label>销售价格 *</label><input type="number" id="salePrice" min="0" step="0.01"/></div>
+      <div class="note">校验：同一商品时间段不可与已有销售重叠；结束时间需晚于开始时间。</div>
+    </div>
+    <footer><button class="btn" onclick="closeModal('modalSale')">取消</button><button class="btn primary" onclick="submitSale()">提交</button></footer>
+  </div>
+</div>
+
+<div class="modal" id="modalAct">
+  <div class="card">
+    <header>新增活动</header>
+    <div class="content">
+      <div class="row"><label>活动名称 *</label><input type="text" id="actName"/></div>
+      <div class="row">
+        <label>类型 *</label>
+        <select id="actTypeNew">
+          <option>折扣</option>
+          <option>满减</option>
+          <option>优惠</option>
+          <option>团购</option>
+        </select>
+      </div>
+      <div class="grid">
+        <div class="row"><label>开始时间 *</label><input type="datetime-local" id="actStartNew"/></div>
+        <div class="row"><label>结束时间 *</label><input type="datetime-local" id="actEndNew"/></div>
+      </div>
+
+      <!-- 根据类型动态渲染的规则区域 -->
+      <div class="divider"></div>
+      <div class="row"><label>活动规则 *</label>
+        <div id="actRulesContainer"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="note">创建后可在活动列表中将其“指定参与的销售”。</div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalAct')">取消</button>
+      <button class="btn primary" onclick="submitAct()">提交</button>
+    </footer>
+  </div>
+</div>
+
+
+<div class="modal" id="modalEmp">
+  <div class="card">
+    <header>新增员工</header>
+    <div class="content">
+      <div class="row">
+        <label>姓名 *</label>
+        <input type="text" id="empName" placeholder="员工真实姓名"/>
+      </div>
+      <div class="row">
+        <label>账号 *</label>
+        <input type="text" id="empAccount" placeholder="4-20 位字母/数字/下划线"/>
+      </div>
+      <div class="row">
+        <label>初始密码 *</label>
+        <div class="stack">
+          <input type="password" id="empPassword" placeholder="至少 6 位"/>
+          <button class="btn" type="button" onclick="togglePwd('empPassword', this)">显示</button>
+        </div>
+      </div>
+      <div class="row">
+        <label>确认密码 *</label>
+        <input type="password" id="empPassword2" placeholder="再次输入密码"/>
+      </div>
+      <div class="row">
+        <label>角色 *</label>
+        <select id="empRole"><option>员工</option><option>管理员</option></select>
+      </div>
+      <div class="row">
+        <label>账号描述</label>
+        <input type="text" id="empDesc" placeholder="该账号的职责说明（可选）"/>
+      </div>
+      <div class="note">说明：演示环境中密码仅用于前端校验，不会持久化到后端。</div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalEmp')">取消</button>
+      <button class="btn primary" onclick="submitEmp()">提交</button>
+    </footer>
+  </div>
+</div>
+<div class="modal" id="modalContract"><div class="card"><header>新增合同</header><div class="content"><div class="row"><label>服务 *</label><input type="text" id="svcName"/></div><div class="row"><label>服务商 *</label><input type="text" id="svcProvider"/></div></div><footer><button class="btn" onclick="closeModal('modalContract')">取消</button><button class="btn primary" onclick="submitContract()">提交</button></footer></div></div>
+
+
+<!-- ✅ 新增：售后 - 不同意理由 -->
+<div class="modal" id="modalAfReject">
+  <div class="card">
+    <header>填写不同意理由</header>
+    <div class="content">
+      <div class="row"><label>不同意理由 *</label>
+        <textarea id="afRejectReason" rows="3" placeholder="说明不同意的原因与依据"></textarea>
+      </div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalAfReject')">取消</button>
+      <button class="btn primary" onclick="submitAfReject()">提交</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ✅ 新增：售后 - 取消理由 -->
+<div class="modal" id="modalAfCancel">
+  <div class="card">
+    <header>取消售后（提交平台审核）</header>
+    <div class="content">
+      <div class="row"><label>取消理由 *</label>
+        <textarea id="afCancelReason" rows="3" placeholder="说明取消原因"></textarea>
+      </div>
+      <div class="note">提交后将取消先前生成的运单或服务单（如有），并把状态改为“已取消”。</div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalAfCancel')">返回</button>
+      <button class="btn primary" onclick="submitAfCancel()">提交取消</button>
+    </footer>
+  </div>
+</div>
+
+
+
+<!-- 修改账户 弹窗 -->
+<div class="modal" id="modalAccountEdit">
+  <div class="card">
+    <header>提交账户修改申请</header>
+    <div class="content">
+      <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="row" style="flex-direction:column;align-items:stretch">
+          <label class="tag">商户名称 *</label>
+          <input id="am_name" type="text" placeholder="商户名称"/>
+        </div>
+        <div class="row" style="flex-direction:column;align-items:stretch">
+          <label class="tag">商品数目上限 *</label>
+          <input id="am_prod" type="number" min="1" placeholder="例如：200"/>
+        </div>
+        <div class="row" style="flex-direction:column;align-items:stretch">
+          <label class="tag">商户员工上限 *</label>
+          <input id="am_staff" type="number" min="1" placeholder="例如：50"/>
+        </div>
+      </div>
+      <div class="note">说明：本操作将提交修改申请，审核通过后生效（状态将显示为<span class="badge warn">待审核</span>）。</div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalAccountEdit')">取消</button>
+      <button class="btn primary" onclick="submitAccountModify()">提交修改申请</button>
+    </footer>
+  </div>
+</div>
+
+<!-- 销户申请 弹窗 -->
+<div class="modal" id="modalAccountCancel">
+  <div class="card">
+    <header>提交销户申请</header>
+    <div class="content">
+      <div class="row" style="flex-direction:column;align-items:stretch">
+        <label class="tag">销户原因 *</label>
+        <textarea id="ac_reason" rows="4" placeholder="请填写销户原因"></textarea>
+      </div>
+      <div class="note">提交后状态将显示为<span class="badge">申请已提交</span>，平台审核后处理。</div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalAccountCancel')">取消</button>
+      <button class="btn warn" onclick="submitAccountCancel()">提交申请</button>
+    </footer>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ---------- 演示登录/开户：新增 ---------- */
+let AUTHED = false;
+let OPEN_APPS = []; // 开户申请记录
+
+/* ---------- 数据（保持原有逻辑与数据结构） ---------- */
+const IS_ADMIN = true;
+const MERCHANT = { name:"极客数码", contact:"400-888-0000", addr:"上海市浦东新区张江路88号" };
+const CATEGORIES = ["数码音频","手机配件","家电","家居日用","户外运动"];
+const STATUS = ["全部","已核准","审核中","未审核","未通过"];
+let PRODUCTS = [
+  {id:1,name:"蓝牙耳机 Pro 1", sku:"SKU-01", category:"数码音频", status:"已核准", price:399, unit:"件", origin:"中国", barcode:"692000000001", share:"商户70% / 平台30%", onshelf:false, weight:null, logistics:"", freight:""},
+  {id:2,name:"蓝牙耳机 Pro 2", sku:"SKU-02", category:"数码音频", status:"审核中", price:399, unit:"件", origin:"中国", barcode:"692000000002", share:"商户70% / 平台30%", onshelf:false},
+  {id:3,name:"充电宝 10000mAh", sku:"SKU-03", category:"手机配件", status:"未通过", price:129, unit:"件", origin:"中国", barcode:"692000000003", share:"商户70% / 平台30%", onshelf:false},
+  {id:4,name:"无线音箱 Mini", sku:"SKU-04", category:"数码音频", status:"已核准", price:259, unit:"件", origin:"中国", barcode:"692000000004", share:"商户70% / 平台30%", onshelf:false},
+  {id:5,name:"蓝牙键盘", sku:"SKU-05", category:"数码音频", status:"未审核", price:199, unit:"件", origin:"中国", barcode:"692000000005", share:"商户70% / 平台30%", onshelf:false},
+  {id:6,name:"户外运动水壶", sku:"SKU-06", category:"户外运动", status:"已核准", price:59, unit:"件", origin:"中国", barcode:"692000000006", share:"商户70% / 平台30%", onshelf:true}
+];
+let SALES = [
+  {id:101, productId:1, type:"普通", start:dateShift(-2), end:dateShift(5), price:369, actIds:[]},
+  {id:102, productId:4, type:"预售", start:dateShift(1), end:dateShift(7), price:229, actIds:[]},
+];
+let ACTIVITIES = [
+  {id:201, name:"金秋折扣", type:"折扣", status:"进行中", start: dateShift(-3), end: dateShift(4), rule:{discountPercent: 90}, saleIds:[101]},
+  {id:202, name:"满300减30", type:"满减", status:"进行中", start: dateShift(-1), end: dateShift(6), rule:{threshold:300, minus:30}, saleIds:[]},
+];
+let ORDERS = [
+  {id:301, productId:1, saleId:101, qty:1, amount:369, status:"未支付", waybill:null, weight:null, buyer:"王小明", phone:"13800001111", province:"上海", city:"上海市", addr:"浦东新区世纪大道100号1幢101室", date:"2025-10-01"},
+  {id:302, productId:4, saleId:null, qty:2, amount:518, status:"待接受", waybill:null, weight:null, buyer:"李雷", phone:"13911112222", province:"浙江", city:"杭州市", addr:"滨江区网商路66号阿里中心A座", date:"2025-10-08"},
+  {id:303, productId:6, saleId:null, qty:1, amount:59, status:"待发货", waybill:"YT9876543210", weight:0.5, buyer:"韩梅梅", phone:"13722223333", province:"江苏", city:"苏州市", addr:"工业园区星湖街88号金鸡湖畔", date:"2025-10-12"},
+  {id:304, productId:4, saleId:null, qty:1, amount:259, status:"已完成", waybill:"SF1234567890", weight:0.8, buyer:"张伟", phone:"13633334444", province:"北京", city:"北京市", addr:"海淀区中关村软件园9号楼", date:"2025-09-28"},
+];
+
+/* 新增：售后数据（演示） */
+let AFTERSALES = [
+  { id:"AS-9001", orderId:301, productId:1, type:"退货",
+    submitTime: dateShift(-1), reason:"包装破损，外观划痕", req:"走退货流程",
+    media:["assets/login/visual.jpg"], status:"待审核",
+    customer:"王小明", phone:"13800001111", province:"上海", city:"上海市"
+  },
+  { id:"AS-9002", orderId:303, productId:6, type:"上门维修",
+    submitTime: dateShift(-5), reason:"阀门异响", req:"安排上门检测维修",
+    media:[], status:"已审核", serviceNo:"SV1234567",
+    customer:"韩梅梅", phone:"13722223333", province:"江苏", city:"苏州市"
+  },
+  { id:"AS-9003", orderId:302, productId:4, type:"换货",
+    submitTime: dateShift(-2), reason:"颜色不符", req:"换同款黑色",
+    media:[], status:"已取消",
+    customer:"李雷", phone:"13911112222", province:"浙江", city:"杭州市"
+  },
+  { id:"AS-9004", orderId:301, productId:1, type:"寄回维修",
+    submitTime: dateShift(-3), reason:"右耳无声", req:"返厂维修后寄回",
+    media:[], status:"已审核", waybillNo:"WB9876543210", serviceNo:"SV7654321",
+    customer:"王小明", phone:"13800001111", province:"上海", city:"上海市"
+  }
+];
+
+
+let EMPLOYEES = [
+  {id:401, name:"赵云", role:"管理员", status:"在职", account:"zhaoyun", desc:"超级管理员", password:"admin123"},
+  {id:402, name:"小李", role:"员工", status:"在职", account:"xiaoli", desc:"客服与售后", password:"demo123"},
+  {id:403, name:"王芳", role:"员工", status:"暂停", account:"wangfang", desc:"仓库拣货（暂停）", password:"demo123"}
+];
+let CONTRACTS = [
+  {
+    id: 801,
+    service: "售后维修",
+    provider: "优修科技",
+    products: ["蓝牙耳机 Pro 1","无线音箱 Mini"],       // 关联商品（用商品名称）
+    place: "华东片区 / 上海市",                          // 服务地区
+    start: "2025-10-01T09:00",                          // 服务开始
+    end:   "2026-09-30T18:00",                          // 服务结束
+    signTime: "2025-10-15T10:30",                       // 签订时间
+    terms: "48小时内上门检测；配件费用按平台标准结算；质保期内免费维修。",
+    status: "已确认",
+    note: "含寄修与上门"
+  },
+  {
+    id: 802,
+    service: "仓储与拣货",
+    provider: "XX 物流服务商",
+    products: ["充电宝 10000mAh"],
+    place: "上海仓（浦东）",
+    start: "2025-08-01T00:00",
+    end:   "2026-07-31T23:59",
+    signTime: "2025-08-01T09:00",
+    terms: "标准仓储计费；丢损按协议约定赔付；7×12h客服支持。",
+    status: "待确认"
+  },
+  {
+    id: 803,
+    service: "物流配送",
+    provider: "顺丰科技",
+    products: ["户外运动水壶"],
+    place: "全国（偏远地区除外）",
+    start: "2025-05-01T08:00",
+    end:   "2026-04-30T20:00",
+    signTime: "2025-05-01T10:00",
+    terms: "48小时发货；签收破损包退换；旺季加收燃油附加费。",
+    status: "暂停中"
+  }
+];
+
+let PAYMENTS = [
+  {id:"P-6001", type:"付款", orderId:301, amount:369, status:"已完成"},
+  {id:"R-7001", type:"退款", orderId:303, amount:59, status:"进行中"},
+];
+
+/* ---------- 工具 ---------- */
+function $(id){ return document.getElementById(id); }
+function toast(msg, ms=1800){ const t=$("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none", ms); }
+function formatPrice(p){ return "¥" + Number(p).toFixed(2); }
+function dateShift(days){ const d=new Date(); d.setDate(d.getDate()+days); d.setSeconds(0,0); return d; }
+function fmt(dt){ if(!dt) return "—"; const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,"0"), d=String(dt.getDate()).padStart(2,"0"), hh=String(dt.getHours()).padStart(2,"0"), mm=String(dt.getMinutes()).padStart(2,"0"); return `${y}-${m}-${d} ${hh}:${mm}`; }
+function formatPublishTime(value){ if(!value) return "—"; const dt=new Date(value); if(!isNaN(dt.getTime())) return fmt(dt); return value.replace("T"," "); }
+function toDatetimeLocal(date){ if(!date) return ""; const pad=n=>String(n).padStart(2,"0"); return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`; }
+function toDateInput(date){ if(!date) return ""; const pad=n=>String(n).padStart(2,"0"); return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`; }
+function overlap(aStart,aEnd,bStart,bEnd){ return (aStart < bEnd) && (bStart < aEnd); }
+function badge(status){
+  // 绿色：OK
+  if (["已核准","进行中","在职","确认","已确认","已完成","已发货"].includes(status))
+    return '<span class="badge ok">'+status+'</span>';
+  // 黄色：提醒
+  if (["审核中","未审核","未开始","待接受","待发货","未支付","待确认","暂停中"].includes(status))
+    return '<span class="badge warn">'+status+'</span>';
+  // 红色：错误/取消
+  return '<span class="badge err">'+status+'</span>';
+}
+function togglePwd(id, btn){
+  const inp = $(id);
+  if(!inp) return;
+  if(inp.type === 'password'){
+    inp.type = 'text';
+    if(btn) btn.textContent = '隐藏';
+  }else{
+    inp.type = 'password';
+    if(btn) btn.textContent = '显示';
+  }
+}
+
+/* ---------- 路由（增强：登录/开户时隐藏侧边栏 & 顶栏信息） ---------- */
+const ROUTES = {
+  auth:{title:"登录", kpi: ()=>{ $("kpiBar").innerHTML=""; }, render: ()=>{} },
+  register:{title:"商户开户", kpi: ()=>{ $("kpiBar").innerHTML=""; }, render: ()=>{} },
+  products:{title:"首页 / 商品管理", kpi: renderKpiProducts, render: renderProducts},
+  sales:{title:"首页 / 销售管理", kpi: renderKpiSales, render: renderSales},
+  activities:{title:"首页 / 活动管理", kpi: renderKpiActs, render: renderActivities},
+  orders:{title:"首页 / 订单管理", kpi: renderKpiOrders, render: renderOrders},
+  aftersales:{ title:"首页 / 售后管理", kpi: renderKpiAftersales, render: renderAftersales },
+  people:{title:"首页 / 人员与账号", kpi: renderKpiPeople, render: renderPeople},
+  services:{title:"首页 / 服务与合同", kpi: renderKpiServices, render: renderServices},
+  finance:{title:"首页 / 支付与账务", kpi: renderKpiFinance, render: renderFinance},
+};
+/* 当前路由（用于 KPI 守卫，防止登录页被覆盖） */
+let CURRENT_ROUTE = 'auth';
+
+function switchRoute(route){
+  CURRENT_ROUTE = route; // 先设置当前路由
+  document.querySelectorAll("aside .item").forEach(it=> it.classList.toggle("active", it.dataset.route===route));
+  $("routeTitle").textContent = ROUTES[route].title;
+  document.querySelectorAll(".section").forEach(sec=> sec.classList.remove("active"));
+  $("page-"+route).classList.add("active");
+  // 登录/开户时隐藏侧边栏，顶部显示“未登录”
+  const authStage = (route==="auth" || route==="register");
+  $("sidebar").style.display = authStage ? "none" : "block";
+  $("userBox").innerHTML = authStage ? "未登录" : `当前店铺：<strong id="shopName">${MERCHANT.name}</strong> ｜ 管理员`;
+  ROUTES[route].kpi(); ROUTES[route].render();
+  if(route==="sales"){ fillSaleSelectors(); }
+}
+document.querySelectorAll("aside .item").forEach(it=> it.addEventListener("click", ()=> switchRoute(it.dataset.route)));
+
+/* ---------- KPI（增加路由守卫） ---------- */
+function kpiBar(items){ $("kpiBar").innerHTML = items.map(x=>`<div class="box"><div class="tag">${x.label}</div><div style="font-weight:700;font-size:20px">${x.value}</div></div>`).join(""); }
+
+function renderKpiProducts(){
+  if (CURRENT_ROUTE !== 'products') return;
+  kpiBar([
+    {label:"商品总数",value:PRODUCTS.length},
+    {label:"已核准",value:PRODUCTS.filter(p=>p.status==='已核准').length},
+    {label:"审核中",value:PRODUCTS.filter(p=>p.status==='审核中').length},
+    {label:"未通过",value:PRODUCTS.filter(p=>p.status==='未通过').length}
+  ]);
+}
+function renderKpiSales(){
+  if (CURRENT_ROUTE !== 'sales') return;
+  const now=new Date();
+  const running=SALES.filter(s=>s.start<=now && now<s.end).length;
+  kpiBar([
+    {label:"销售总数",value:SALES.length},
+    {label:"进行中",value:running},
+    {label:"预售",value:SALES.filter(s=>s.type==='预售').length},
+    {label:"团购",value:SALES.filter(s=>s.type==='团购').length}
+  ]);
+}
+function renderKpiActs(){
+  if (CURRENT_ROUTE !== 'activities') return;
+  kpiBar([
+    {label:"活动总数",value:ACTIVITIES.length},
+    {label:"进行中",value:ACTIVITIES.filter(a=>a.status==='进行中').length}
+  ]);
+}
+function renderKpiOrders(){
+  if (CURRENT_ROUTE !== 'orders') return;
+  kpiBar([
+    {label:"订单总数",value:ORDERS.length},
+    {label:"未支付",value:ORDERS.filter(o=>o.status==='未支付').length},
+    {label:"待接受",value:ORDERS.filter(o=>o.status==='待接受').length},
+    {label:"待发货",value:ORDERS.filter(o=>o.status==='待发货').length},
+  ]);
+}
+function renderKpiPeople(){
+  if (CURRENT_ROUTE !== 'people') return;
+  kpiBar([
+    {label:"员工总数",value:EMPLOYEES.length},
+    {label:"在职",value:EMPLOYEES.filter(e=>e.status==='在职').length},
+    {label:"暂停",value:EMPLOYEES.filter(e=>e.status==='暂停').length}
+  ]);
+}
+function renderKpiServices(){
+  if (CURRENT_ROUTE !== 'services') return;
+  $("kpiBar").innerHTML = "";
+}
+function renderKpiFinance(){
+  if (CURRENT_ROUTE !== 'finance') return;
+  const sumPay=PAYMENTS.filter(p=>p.type==='付款').reduce((a,b)=>a+b.amount,0);
+  const sumRef=PAYMENTS.filter(p=>p.type==='退款').reduce((a,b)=>a+b.amount,0);
+  kpiBar([
+    {label:"付款总额",value:'¥'+sumPay.toFixed(2)},
+    {label:"退款总额",value:'¥'+sumRef.toFixed(2)},
+    {label:"单据总数",value:PAYMENTS.length}
+  ]);
+}
+
+/* ---------- 登录/开户逻辑（新增） ---------- */
+document.getElementById("btnLogin")?.addEventListener("click", ()=>{
+  const name = document.getElementById("loginName").value.trim();
+  const account = document.getElementById("loginAccount").value.trim();
+  const pwd = document.getElementById("loginPwd").value;
+  if(!name||!account||!pwd){ toast("请填写完整登录信息"); return; }
+  MERCHANT.name = name || "未命名商户";
+  AUTHED = true;
+  enterApp();
+  toast("登录成功");
+});
+document.getElementById("btnGotoRegister")?.addEventListener("click", ()=> switchRoute("register"));
+document.getElementById("btnBackLogin")?.addEventListener("click", ()=> switchRoute("auth"));
+
+function submitRegister(){
+  const name = document.getElementById("regName").value.trim();
+  const contact = document.getElementById("regContactName").value.trim();
+  const phone = document.getElementById("regPhone").value.trim();
+  const email = document.getElementById("regEmail").value.trim();
+  const addr = document.getElementById("regAddr").value.trim();
+  const prodLimit = Number(document.getElementById("regProdLimit").value);
+  const staffLimit = Number(document.getElementById("regStaffLimit").value);
+  const agree = document.getElementById("regAgree").checked;
+  if(!name||!contact||!phone||!addr||!(prodLimit>0)||!(staffLimit>0)){ toast("请完善必填项"); return; }
+  if(!agree){ toast("请先同意服务协议"); return; }
+  const app = {time: fmt(new Date()), name, contact, phone, email, addr, prodLimit, staffLimit, status:"审核中"};
+  OPEN_APPS.unshift(app);
+  // 同步到 MERCHANT 基本资料
+  MERCHANT.name = name;
+  MERCHANT.addr = addr;
+  MERCHANT.contact = phone;
+  AUTHED = true;
+  toast("已提交开户申请，进入主界面（审核中）");
+  enterApp();
+}
+document.getElementById("btnRegSubmit")?.addEventListener("click", submitRegister);
+
+function enterApp(){
+  switchRoute("products");
+  // 刷新店铺名
+  const el = document.getElementById("shopName");
+  if(el){ el.textContent = MERCHANT.name; }
+}
+
+/* ---------- 商品管理（保持不变） ---------- */
+const state = { tab:"全部", view:"audit", q:"", cat:"", pmin:"", pmax:"", page:1, pageSize:10, attrTargetId:null, publishTargetId:null, changeTargetId:null };
+const PRODUCT_VIEW_NOTES = {
+  audit:"查看商品审核状态，无法直接进行上下架操作。",
+  shelf:"仅展示已核准商品，集中执行上架或下架操作。"
+};
+const AUDIT_HEAD_HTML = `<tr>
+  <th style="width:360px">商品</th>
+  <th style="width:120px">分类</th>
+  <th style="width:120px">审核状态</th>
+  <th style="width:100px">原价</th>
+  <th style="width:80px">单位</th>
+  <th style="width:120px">产地</th>
+  <th style="width:180px">条码</th>
+  <th style="width:120px">分账比例</th>
+  <th style="width:200px">操作</th>
+</tr>`;
+const SHELF_HEAD_HTML = `<tr>
+  <th style="width:360px">商品</th>
+  <th style="width:140px">分类</th>
+  <th style="width:120px">审核状态</th>
+  <th style="width:100px">原价</th>
+  <th style="width:140px">上架状态</th>
+  <th style="width:320px">操作</th>
+</tr>`;
+function initProducts(){
+  document.getElementById("statusTabs").innerHTML = STATUS.map(s=>`<div class="tab ${s==='全部'?'active':''}" data-s="${s}">${s}</div>`).join("");
+  document.getElementById("statusTabs").addEventListener("click", e=>{ const t=e.target.closest(".tab"); if(!t) return; [...document.getElementById("statusTabs").children].forEach(x=>x.classList.remove("active")); t.classList.add("active"); state.tab=t.dataset.s; state.page=1; renderProducts(); });
+  document.getElementById("productViewToggle").addEventListener("click", e=>{ const btn=e.target.closest(".switch-btn"); if(!btn) return; const view=btn.dataset.view; if(!view || view===state.view) return; state.view=view; state.page=1; renderProducts(); });
+  document.getElementById("cat").innerHTML = '<option value=\"\">全部分类</option>' + CATEGORIES.map(c=>`<option>${c}</option>`).join("");
+  document.getElementById("fCat").innerHTML = CATEGORIES.map(c=>`<option>${c}</option>`).join("");
+  document.getElementById("btnSearch").onclick = ()=>{ state.q=document.getElementById("q").value.trim(); state.cat=document.getElementById("cat").value; state.pmin=document.getElementById("pmin").value; state.pmax=document.getElementById("pmax").value; state.page=1; renderProducts(); };
+  document.getElementById("prev").onclick = ()=>{ if(state.page>1){state.page--; renderProducts();} };
+  document.getElementById("next").onclick = ()=>{ const {pages} = getFiltered(); if(state.page<pages){state.page++; renderProducts();} };
+  document.getElementById("btnAdd").onclick = ()=> openDrawer("drawerAdd");
+  document.getElementById("btnBundle").onclick = ()=> openBundle();
+}
+function getFiltered(){
+  let list=[...PRODUCTS];
+  if(state.view==="audit"){
+    if(state.tab!=="全部") list=list.filter(p=>p.status===state.tab);
+  }else{
+    list=list.filter(p=>p.status==="已核准");
+  }
+  if(state.q){ const q=state.q.toLowerCase(); list=list.filter(p=> p.name.toLowerCase().includes(q) || String(p.barcode).includes(state.q)); }
+  if(state.cat) list=list.filter(p=>p.category===state.cat);
+  const min=state.pmin?Number(state.pmin):-Infinity, max=state.pmax?Number(state.pmax):Infinity;
+  list=list.filter(p=> p.price>=min && p.price<=max).sort((a,b)=>b.id-a.id);
+  const pages=Math.max(1, Math.ceil(list.length/state.pageSize)), start=(state.page-1)*state.pageSize;
+  return {pageItems:list.slice(start,start+state.pageSize), pages, total:list.length};
+}
+function renderProducts(){
+  renderKpiProducts();
+  const isAudit = state.view==="audit";
+  const {pageItems,pages,total}=getFiltered();
+  document.getElementById("pageNum").textContent = state.page + " / " + pages;
+  document.getElementById("pagerInfo").textContent = `共 ${total} 条 ｜ 每页 ${state.pageSize} 条`;
+  document.getElementById("statusTabs").classList.toggle("hidden", !isAudit);
+  document.getElementById("auditActions").classList.toggle("hidden", !isAudit);
+  document.getElementById("productHead").innerHTML = isAudit ? AUDIT_HEAD_HTML : SHELF_HEAD_HTML;
+  document.getElementById("viewNote").textContent = PRODUCT_VIEW_NOTES[state.view];
+  document.querySelectorAll("#productViewToggle .switch-btn").forEach(btn=> btn.classList.toggle("active", btn.dataset.view===state.view));
+  const tbody = document.getElementById("tbody");
+  if(!pageItems.length){
+    const span = isAudit ? 9 : 6;
+    tbody.innerHTML = `<tr><td colspan="${span}" style="padding:40px;text-align:center;color:#94a3b8;">暂无相关商品</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = pageItems.map(p=> isAudit?renderAuditRow(p):renderShelfRow(p)).join("");
+}
+
+function renderAuditRow(p){
+  return `<tr>
+    <td>${renderProductInfo(p)}</td>
+    <td>${p.category}</td>
+    <td>${badge(p.status)}</td>
+    <td>${formatPrice(p.price)}</td>
+    <td>${p.unit}</td>
+    <td>${p.origin}</td>
+    <td>${p.barcode}</td>
+    <td>${p.share}</td>
+    <td><div class="ops">${renderProductOps(p)}</div></td>
+  </tr>`;
+}
+
+// 替换：上下架行 - 仅保留“查看详情 + 去上架/下架”
+function renderShelfRow(p){
+  const onshelf = p.onshelf?'<span class="badge ok">已上架</span>':'<span class="badge">未上架</span>';
+  const action = p.onshelf
+    ? `<button class="pill" onclick="goOffshelf(${p.id})">下架</button>`
+    : `<button class="pill" onclick="goPublish(${p.id})">去上架</button>`;
+  const ops = [
+    `<button class="pill" onclick="viewProduct(${p.id})">查看详情</button>`,
+    action
+  ].join("");
+  return `<tr>
+    <td>${renderProductInfo(p)}</td>
+    <td>${p.category}</td>
+    <td>${badge(p.status)}</td>
+    <td>${formatPrice(p.price)}</td>
+    <td>${onshelf}</td>
+    <td><div class="ops">${ops}</div></td>
+  </tr>`;
+}
+
+
+function renderProductOps(p){
+  const modifyBtn = p.status==="已核准"
+    ? `<button class="pill" onclick="openAttr(${p.id})">修改属性</button>`
+    : `<button class="pill disabled" disabled onclick="openAttr(${p.id})">修改属性</button>`;
+  return [
+    `<button class="pill" onclick="viewProduct(${p.id})">查看详情</button>`,
+    modifyBtn,
+    `<button class="pill" onclick="applyChange(${p.id})">申请变更</button>`
+  ].join("");
+}
+
+function renderProductInfo(p){
+  if(p.type === "bundle" && p.items && p.items.length > 0){
+    const bundleItems = p.items.map(item => {
+      const subProduct = PRODUCTS.find(prod => prod.id === item.productId);
+      const subName = subProduct ? subProduct.name : "未知商品";
+      return `<div style="margin:4px 0; padding:6px; background:#f8f9ff; border-radius:6px; border-left:3px solid var(--primary);">
+        <div style="font-weight:600; color:#1f2937">${subName}</div>
+        <div style="font-size:12px; color:#64748b; margin-top:2px">
+          数量: ${item.qty} | 分账比例: ${item.share}%
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="prod"><div class="thumb">📦</div><div><div style="font-weight:600">${p.name}（${p.sku||"—"}）</div><div class="tag">捆绑商品</div><div style="margin-top:6px">${bundleItems}</div></div></div>`;
+  }
+  return `<div class="prod"><div class="thumb">IMG</div><div><div style="font-weight:600">${p.name}（${p.sku||"—"}）</div><div class="tag">审核备注：—</div></div></div>`;
+}
+
+// 新增：在商品详情中展示“有效/未开始”的销售（普通/团购/预售）
+function renderProductSalesHTML(product){
+  const now = new Date();
+  const list = SALES
+    .filter(s => s.productId === product.id)
+    .filter(s => {
+      const r = getSaleRange(s);
+      return now < r.end; // 未结束（进行中或未开始）
+    })
+    .sort((a,b)=> getSaleRange(a).start - getSaleRange(b).start);
+
+  if(!list.length) return `
+    <div style="margin-top:16px">
+      <div class="tag" style="margin-bottom:8px">相关销售（有效/未开始）</div>
+      <div class="note">暂无</div>
+    </div>
+  `;
+
+  const rows = list.map(s=>{
+    const r = getSaleRange(s);
+    return `
+      <tr>
+        <td style="width:90px">#${s.id}</td>
+        <td style="width:80px">${s.type}</td>
+        <td style="width:220px">${fmt(r.start)} ~ ${fmt(r.end)}</td>
+        <td style="width:180px">${salePriceText(s)}</td>
+        <td style="width:100px">${badge(salesStatus(s))}</td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div style="margin-top:16px">
+      <div class="tag" style="margin-bottom:8px">相关销售（有效/未开始）</div>
+      <div class="panel">
+        <table>
+          <thead><tr>
+            <th style="width:90px">销售ID</th>
+            <th style="width:80px">类型</th>
+            <th style="width:220px">时间</th>
+            <th style="width:180px">价格</th>
+            <th style="width:100px">状态</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+
+function renderPublishDetail(p){
+  if(!p.publishInfo) return "";
+  const info = p.publishInfo;
+  const limitText = info.limit ? `${info.limit} 件/人` : "不限购";
+  return `<div style="margin-top:16px">
+    <div class="tag" style="margin-bottom:8px">销售信息</div>
+    <div class="grid">
+      <div><div class="tag">渠道</div><div>${info.channel||"—"}</div></div>
+      <div><div class="tag">销售价格</div><div>${formatPrice(info.price||p.price)}</div></div>
+      <div><div class="tag">库存</div><div>${info.stock||"—"}</div></div>
+      <div><div class="tag">限购</div><div>${limitText}</div></div>
+      <div><div class="tag">开始时间</div><div>${formatPublishTime(info.start)}</div></div>
+      <div><div class="tag">结束时间</div><div>${formatPublishTime(info.end)}</div></div>
+    </div>
+    ${info.remark?`<div class="note" style="margin-top:8px">${info.remark}</div>`:""}
+  </div>`;
+}
+
+function renderChangeDetail(p){
+  if(!p.changeInfo) return "";
+  const info = p.changeInfo;
+  return `<div style="margin-top:16px">
+    <div class="tag" style="margin-bottom:8px">最近一次变更申请</div>
+    <div class="grid">
+      <div><div class="tag">变更类型</div><div>${info.type||"—"}</div></div>
+      <div><div class="tag">涉及字段</div><div>${info.field||"—"}</div></div>
+      <div><div class="tag">期望生效</div><div>${info.date||"—"}</div></div>
+      <div><div class="tag">优先级</div><div>${info.priority||"—"}</div></div>
+      <div><div class="tag">联系人</div><div>${info.contact||"—"}</div></div>
+      <div><div class="tag">联系电话</div><div>${info.phone||"—"}</div></div>
+    </div>
+    <div style="margin-top:8px"><div class="tag">变更原因</div><div>${info.reason||"—"}</div></div>
+    ${info.note?`<div class="note" style="margin-top:8px">${info.note}</div>`:""}
+  </div>`;
+}
+
+function viewProduct(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  document.getElementById("viewTitle").textContent="商品详情";
+  const saleInfoBlock = renderPublishDetail(p);
+  const changeInfoBlock = renderChangeDetail(p);
+  
+  // 如果是捆绑商品，显示完整结构
+  if(p.type === "bundle" && p.items && p.items.length > 0){
+    const bundleItems = p.items.map(item => {
+      const subProduct = PRODUCTS.find(prod => prod.id === item.productId);
+      const subName = subProduct ? subProduct.name : "未知商品";
+      const subCategory = subProduct ? subProduct.category : "—";
+      const subPrice = subProduct ? formatPrice(subProduct.price) : "—";
+      const subUnit = subProduct ? subProduct.unit : "—";
+      const subOrigin = subProduct ? subProduct.origin : "—";
+      const subBarcode = subProduct ? subProduct.barcode : "—";
+      
+      return `<div style="margin:8px 0; padding:12px; background:#f8f9ff; border-radius:8px; border:1px solid #e0e7ff;">
+        <div style="font-weight:600; color:#1f2937; margin-bottom:8px">${subName}</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+          <div><span style="color:#64748b">分类:</span> ${subCategory}</div>
+          <div><span style="color:#64748b">原价:</span> ${subPrice}</div>
+          <div><span style="color:#64748b">单位:</span> ${subUnit}</div>
+          <div><span style="color:#64748b">产地:</span> ${subOrigin}</div>
+          <div><span style="color:#64748b">条码:</span> ${subBarcode}</div>
+          <div><span style="color:#64748b">数量:</span> ${item.qty}</div>
+          <div><span style="color:#64748b">分账比例:</span> ${item.share}%</div>
+        </div>
+      </div>`;
+    }).join("");
+    
+    document.getElementById("viewBody").innerHTML=`<div class="grid">
+      <div><div class="tag">商品名称</div><div style="font-weight:600">${p.name}</div></div>
+      <div><div class="tag">分类</div><div>${p.category}</div></div>
+      <div><div class="tag">状态</div><div>${p.status}</div></div>
+      <div><div class="tag">原价</div><div>${formatPrice(p.price)}</div></div>
+      <div><div class="tag">单位</div><div>${p.unit}</div></div>
+      <div><div class="tag">产地</div><div>${p.origin}</div></div>
+      <div><div class="tag">条码</div><div>${p.barcode}</div></div>
+      <div><div class="tag">分账比例</div><div>${p.share}</div></div>
+      <div><div class="tag">上架</div><div>${p.onshelf?'已上架':'未上架'}</div></div>
+      <div><div class="tag">SKU</div><div>${p.sku||"—"}</div></div>
+      <div><div class="tag">重量</div><div>${p.weight??"—"}</div></div>
+      <div><div class="tag">物流/运费</div><div>${p.logistics||"—"} / ${p.freight||"—"}</div></div>
+    </div>
+    ${saleInfoBlock}${changeInfoBlock}
+    <div style="margin-top:16px">
+      <div class="tag" style="margin-bottom:8px">捆绑商品详情</div>
+      ${bundleItems}
+    </div>`;
+  } else {
+    // 普通商品显示
+    document.getElementById("viewBody").innerHTML=`<div class="grid">
+      <div><div class="tag">商品名称</div><div style="font-weight:600">${p.name}</div></div>
+      <div><div class="tag">分类</div><div>${p.category}</div></div>
+      <div><div class="tag">状态</div><div>${p.status}</div></div>
+      <div><div class="tag">原价</div><div>${formatPrice(p.price)}</div></div>
+      <div><div class="tag">单位</div><div>${p.unit}</div></div>
+      <div><div class="tag">产地</div><div>${p.origin}</div></div>
+      <div><div class="tag">条码</div><div>${p.barcode}</div></div>
+      <div><div class="tag">分账比例</div><div>${p.share}</div></div>
+      <div><div class="tag">上架</div><div>${p.onshelf?'已上架':'未上架'}</div></div>
+      <div><div class="tag">SKU</div><div>${p.sku||"—"}</div></div>
+      <div><div class="tag">重量</div><div>${p.weight??"—"}</div></div>
+      <div><div class="tag">物流/运费</div><div>${p.logistics||"—"} / ${p.freight||"—"}</div></div>
+    </div>
+    ${saleInfoBlock}${changeInfoBlock}`;
+  }
+  
+// 追加：展示“相关销售（有效/未开始）”
+document.getElementById("viewBody").insertAdjacentHTML("beforeend", renderProductSalesHTML(p));
+
+
+  openModal("modalView");
+}
+function openAttr(id){ const p=PRODUCTS.find(x=>x.id===id); if(p.status!=="已核准"){ toast("仅已核准商品可修改属性"); return; } state.attrTargetId=id; document.getElementById("mSku").value=p.sku||""; document.getElementById("mWeight").value=p.weight||""; document.getElementById("mLogistics").value=p.logistics||""; document.getElementById("mFreight").value=p.freight||""; openModal("modalAttr"); }
+function saveAttr(){ const id=state.attrTargetId; if(!id) return; const p=PRODUCTS.find(x=>x.id===id); p.sku=document.getElementById("mSku").value.trim(); p.weight=document.getElementById("mWeight").value?Number(document.getElementById("mWeight").value):null; p.logistics=document.getElementById("mLogistics").value.trim(); p.freight=document.getElementById("mFreight").value.trim(); closeModal("modalAttr"); toast("已保存商品属性"); renderProducts(); }
+function applyChange(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  if(!p){ toast("商品不存在"); return; }
+  state.changeTargetId=id;
+  fillChangeForm(p);
+  openModal("modalChange");
+}
+function fillChangeForm(p){
+  const info=p.changeInfo||{};
+  const defaultDate=toDateInput(new Date(Date.now()+2*24*60*60*1000));
+  $("changeType").value=info.type||"价格调整";
+  $("changeField").value=info.field||"";
+  $("changeDate").value=info.date||defaultDate;
+  $("changePriority").value=info.priority||"一般";
+  $("changeContact").value=info.contact||"";
+  $("changePhone").value=info.phone||MERCHANT.contact||"";
+  $("changeReason").value=info.reason||"";
+  $("changeNote").value=info.note||"";
+}
+function submitChange(){
+  if(!state.changeTargetId){ toast("未选择需变更的商品"); return; }
+  const p=PRODUCTS.find(x=>x.id===state.changeTargetId);
+  if(!p){ toast("商品不存在"); return; }
+  const type=$("changeType").value;
+  const field=$("changeField").value.trim();
+  const date=$("changeDate").value;
+  const priority=$("changePriority").value;
+  const contact=$("changeContact").value.trim();
+  const phone=$("changePhone").value.trim();
+  const reason=$("changeReason").value.trim();
+  const note=$("changeNote").value.trim();
+  if(!type||!field||!date||!priority||!contact||!phone||!reason){
+    toast("请完整填写变更信息");
+    return;
+  }
+  const dateObj=new Date(date);
+  if(isNaN(dateObj.getTime())){
+    toast("期望生效日期格式不正确");
+    return;
+  }
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  if(dateObj<today){
+    toast("期望生效日期不能早于今天");
+    return;
+  }
+  p.changeInfo={ type, field, date, priority, contact, phone, reason, note, submittedAt:fmt(new Date()) };
+  p.status="审核中";
+  closeChangeModal();
+  toast("已提交变更申请，等待审核");
+  renderProducts();
+}
+function closeChangeModal(){
+  resetChangeForm();
+  state.changeTargetId=null;
+  closeModal("modalChange");
+}
+function resetChangeForm(){
+  $("changeType").value="价格调整";
+  $("changeField").value="";
+  $("changeDate").value=toDateInput(new Date(Date.now()+2*24*60*60*1000));
+  $("changePriority").value="一般";
+  $("changeContact").value="";
+  $("changePhone").value="";
+  $("changeReason").value="";
+  $("changeNote").value="";
+}
+function goPublish(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  if(!p){ toast("商品不存在"); return; }
+  if(p.status!=="已核准"){ toast("仅已核准商品可上架"); return; }
+  state.publishTargetId=id;
+  fillPublishForm(p);
+  openModal("modalPublish");
+}
+
+// 替换：填充上架表单（默认普通）
+function fillPublishForm(p){
+  const info=p.publishInfo||{};
+  const now=new Date();
+  // 绑定类型切换
+  const typeSel = $("publishType");
+  if(typeSel && !typeSel._binded){
+    typeSel.addEventListener("change", togglePublishTypeUI);
+    typeSel._binded = true;
+  }
+  $("publishType").value = info.type || "普通";
+  togglePublishTypeUI();
+
+  // 通用
+  $("publishChannel").value = info.channel || "线上商城";
+
+  // 普通/团购默认
+  $("publishPrice").value = info.price ?? p.price ?? "";
+  $("publishStock").value = info.stock ?? 100;
+  $("publishLimit").value = info.limit??"";
+  $("publishStart").value = info.start || toDatetimeLocal(now);
+  $("publishEnd").value   = info.end   || toDatetimeLocal(new Date(now.getTime()+7*24*60*60*1000));
+  $("publishRemark").value = info.remark||"";
+
+  // 预售默认
+  $("publishPreStart").value = info.presaleStart || toDatetimeLocal(now);
+  $("publishPreEnd").value   = info.presaleEnd   || toDatetimeLocal(new Date(now.getTime()+7*24*60*60*1000));
+  $("publishDeposit").value  = info.deposit ?? "";
+  $("publishFinal").value    = info.final ?? "";
+  $("publishTailPayStart").value = info.payTailStart || toDatetimeLocal(new Date(now.getTime()+8*24*60*60*1000));
+  $("publishPreStock").value = info.preStock ?? 100;
+  $("publishPreLimit").value = info.preLimit ?? "";
+  $("publishPreRemark").value= info.preRemark || "";
+}
+
+function togglePublishTypeUI(){
+  const t = $("publishType").value;
+  const showPre = (t==="预售");
+  $("publishPresaleFields").classList.toggle("hidden", !showPre);
+  $("publishNormalFields").classList.toggle("hidden", showPre);
+}
+
+function resetPublishForm(){
+  $("publishType").value="普通";
+  togglePublishTypeUI();
+  $("publishChannel").value="线上商城";
+
+  // 普通
+  $("publishPrice").value="";
+  $("publishStock").value="";
+  $("publishLimit").value="";
+  $("publishStart").value="";
+  $("publishEnd").value="";
+  $("publishRemark").value="";
+
+  // 预售
+  $("publishPreStart").value="";
+  $("publishPreEnd").value="";
+  $("publishDeposit").value="";
+  $("publishFinal").value="";
+  $("publishTailPayStart").value="";
+  $("publishPreStock").value="";
+  $("publishPreLimit").value="";
+  $("publishPreRemark").value="";
+}
+
+// 替换：提交上架（含重叠校验 + 同步到 SALES）
+function submitPublish(){
+  if(!state.publishTargetId){ toast("未选择需上架的商品"); return; }
+  const p=PRODUCTS.find(x=>x.id===state.publishTargetId);
+  if(!p){ toast("商品不存在"); return; }
+  if(p.status!=="已核准"){ toast("仅已核准商品可上架"); return; }
+
+  const type = $("publishType").value;
+  const channel = $("publishChannel").value.trim();
+
+  // 公用校验
+  if(!channel){ toast("请选择销售渠道"); return; }
+
+  // 生成新销售ID
+  const newId = Math.max(100, ...SALES.map(x=>x.id)) + 1;
+
+  // 根据类型分别校验/构造
+  let newSale = null;
+  if(type==="预售"){
+    const preStart = new Date($("publishPreStart").value);
+    const preEnd   = new Date($("publishPreEnd").value);
+    const deposit  = Number($("publishDeposit").value);
+    const final    = Number($("publishFinal").value);
+    const tailPayStart = new Date($("publishTailPayStart").value);
+    const stock    = Number($("publishPreStock").value);
+    const limitRaw = ($("publishPreLimit").value||"").trim();
+    const remark   = $("publishPreRemark").value.trim();
+
+    if(!(preStart && preEnd && tailPayStart) || isNaN(preStart)||isNaN(preEnd)||isNaN(tailPayStart)){
+      toast("请完整填写预售起止时间与尾款开始时间"); return;
+    }
+    if(!(preEnd>preStart)){ toast("预售结束时间需晚于开始时间"); return; }
+    if(!(deposit>=0) || !(final>=0)){ toast("定金/尾款需为不小于 0 的金额"); return; }
+    if(!(stock>0)){ toast("销售总数需大于 0"); return; }
+    let limit = null;
+    if(limitRaw){
+      const v = Number(limitRaw);
+      if(!(v>0)){ toast("单次允许购买数需为大于 0 的整数或留空"); return; }
+      limit = Math.round(v);
+    }
+
+    // 重叠校验：与同商品所有销售（普通/团购/预售）的时间区间不可重叠
+    const overlapHit = SALES.some(s=>{
+      if(s.productId!==p.id) return false;
+      const r = getSaleRange(s);
+      return overlap(preStart, preEnd, r.start, r.end);
+    });
+    if(overlapHit){ toast("上架失败：该商品存在销售时间段重叠"); return; }
+
+    newSale = {
+      id:newId, productId:p.id, type:"预售",
+      presaleStart: preStart, presaleEnd: preEnd,
+      deposit: Number(deposit.toFixed(2)), final: Number(final.toFixed(2)),
+      payTailStart: tailPayStart,
+      stock: Math.round(stock), limit,
+      actIds:[]
+    };
+
+    // 记录到商品的 publishInfo（可选保留，用于查看）
+    p.publishInfo = {
+      type:"预售", channel, presaleStart: $("publishPreStart").value, presaleEnd: $("publishPreEnd").value,
+      deposit: Number(deposit.toFixed(2)), final: Number(final.toFixed(2)),
+      payTailStart: $("publishTailPayStart").value,
+      stock:newSale.stock, limit:newSale.limit, remark
+    };
+
+  }else{
+    // 普通 / 团购
+    const priceValue=Number($("publishPrice").value);
+    const stockValue=Number($("publishStock").value);
+    const start = new Date($("publishStart").value);
+    const end   = new Date($("publishEnd").value);
+    const limitRaw=($("publishLimit").value||"").trim();
+    const remark=$("publishRemark").value.trim();
+
+    if(!start || !end || isNaN(start)||isNaN(end)){ toast("请完整填写开始/结束时间"); return; }
+    if(!(end>start)){ toast("结束时间需晚于开始时间"); return; }
+    if(!(priceValue>0)){ toast("销售价格需大于 0"); return; }
+    if(!(stockValue>0)){ toast("销售总数需大于 0"); return; }
+    let limitValue=null;
+    if(limitRaw){
+      const v = Number(limitRaw);
+      if(!(v>0)){ toast("单次允许购买数需为大于 0 的整数或留空"); return; }
+      limitValue=Math.round(v);
+    }
+
+    // 重叠校验
+    const overlapHit = SALES.some(s=>{
+      if(s.productId!==p.id) return false;
+      const r = getSaleRange(s);
+      return overlap(start, end, r.start, r.end);
+    });
+    if(overlapHit){ toast("上架失败：该商品存在销售时间段重叠"); return; }
+
+    newSale = {
+      id:newId, productId:p.id, type:type, // 普通 / 团购
+      start, end, price:Number(priceValue.toFixed(2)),
+      stock:Math.round(stockValue), limit:limitValue,
+      actIds:[]
+    };
+
+    p.publishInfo = {
+      type, channel, price:newSale.price, stock:newSale.stock,
+      start:$("publishStart").value, end:$("publishEnd").value,
+      limit:newSale.limit, remark
+    };
+  }
+
+  // 成立：写入数据（同步销售管理）
+  SALES.push(newSale);
+  p.onshelf = true;
+
+  closePublishModal();
+  toast("销售信息已提交，商品完成上架，并已同步到销售管理");
+  renderProducts();
+  renderSales(); // 同步刷新销售管理列表
+}
+
+
+function closePublishModal(){
+  resetPublishForm();
+  state.publishTargetId=null;
+  closeModal("modalPublish");
+}
+
+function goOffshelf(id){ const p=PRODUCTS.find(x=>x.id===id); if(!p){ toast("商品不存在"); return; } p.onshelf=false; toast("已下架商品"); renderProducts(); }
+function openDrawer(id){ document.getElementById(id).style.display="flex"; }
+function closeDrawer(id){ document.getElementById(id).style.display="none"; clearAddForm(); }
+function clearAddForm(){ document.getElementById("fCat").value=CATEGORIES[0]; document.getElementById("fName").value=""; document.getElementById("fPrice").value=""; document.getElementById("fUnit").value=""; document.getElementById("fOrigin").value="中国"; document.getElementById("fBarcode").value=""; document.getElementById("fShare").value="商户70% / 平台30%"; }
+function submitAdd(){ const cat=document.getElementById("fCat").value.trim(), name=document.getElementById("fName").value.trim(), price=Number(document.getElementById("fPrice").value), unit=document.getElementById("fUnit").value.trim(), origin=document.getElementById("fOrigin").value.trim(), barcode=document.getElementById("fBarcode").value.trim(), share=document.getElementById("fShare").value.trim(); if(!cat||!name||!price||!unit||!origin||!barcode||!share){ toast("请完整填写必填项"); return; } const id=Math.max(0,...PRODUCTS.map(x=>x.id))+1; PRODUCTS.push({id,name,sku:"—",category:cat,status:"审核中",price,unit,origin,barcode,share,onshelf:false}); closeDrawer("drawerAdd"); toast("已提交新增商品申请（进入审核中）"); renderProducts(); fillSaleSelectors(); }
+let bundleSelected=new Map();
+function openBundle(){ 
+  const approved=PRODUCTS.filter(p=>p.status==="已核准"); 
+  document.getElementById("bundlePool").innerHTML=approved.map(p=>`<tr><td><input type="checkbox" data-id="${p.id}" ${bundleSelected.has(p.id)?'checked':''}></td><td>${p.name}</td><td>${p.category}</td><td>${formatPrice(p.price)}</td></tr>`).join(""); 
+  document.getElementById("bundleChosen").innerHTML=renderBundleChosen(); 
+  // 初始化分类下拉框
+  document.getElementById("bundleCat").innerHTML = CATEGORIES.map(c=>`<option>${c}</option>`).join("");
+  // 清空输入框
+  document.getElementById("bundleName").value = "";
+  document.getElementById("bundleOrigin").value = "中国";
+  document.getElementById("bundlePrice").value = "";
+  document.getElementById("bundleUnit").value = "件";
+  document.getElementById("bundleBarcode").value = "";
+  document.getElementById("bundleShare").value = "商户70% / 平台30%";
+  
+  document.getElementById("bundlePool").onclick=(e)=>{ const cb=e.target.closest('input[type="checkbox"]'); if(!cb) return; const id=Number(cb.dataset.id); const p=PRODUCTS.find(x=>x.id===id); if(cb.checked){ if(bundleSelected.size>=5){ cb.checked=false; toast("最多选择 5 个商品"); return; } bundleSelected.set(id,{id,name:p.name,qty:1,ratio:0}); } else { bundleSelected.delete(id); } document.getElementById("bundleChosen").innerHTML=renderBundleChosen(); }; 
+  openModal("modalBundle"); 
+}
+function renderBundleChosen(){ const rows=[]; for(const item of bundleSelected.values()){ rows.push(`<tr><td>${item.name}</td><td><input type="number" min="1" value="${item.qty}" data-id="${item.id}" data-k="qty" style="width:100px"></td><td><input type="number" min="0" max="100" value="${item.ratio}" data-id="${item.id}" data-k="ratio" style="width:120px"></td><td><button class="btn" onclick="removeBundle(${item.id})">移除</button></td></tr>`); } setTimeout(()=>{ document.getElementById("bundleChosen").oninput=(e)=>{ const inp=e.target.closest("input"); if(!inp) return; const id=Number(inp.dataset.id), k=inp.dataset.k; const it=bundleSelected.get(id); if(!it) return; it[k]=Number(inp.value); }; }); return rows.join("")||`<tr><td colspan="4" class="tag">尚未选择</td></tr>`; }
+function removeBundle(id){ bundleSelected.delete(id); const cb=document.querySelector('#bundlePool input[data-id="'+id+'"]'); if(cb) cb.checked=false; document.getElementById("bundleChosen").innerHTML=renderBundleChosen(); }
+function submitBundle(){ 
+  const name=document.getElementById("bundleName").value.trim();
+  const category=document.getElementById("bundleCat").value.trim();
+  const origin=document.getElementById("bundleOrigin").value.trim();
+  const price=Number(document.getElementById("bundlePrice").value);
+  const unit=document.getElementById("bundleUnit").value.trim();
+  const barcode=document.getElementById("bundleBarcode").value.trim();
+  const share=document.getElementById("bundleShare").value.trim(); 
+  
+  if(!name||!category||!origin||!price||!unit||!barcode||!share){ 
+    toast("请完整填写捆绑商品基本信息"); 
+    return; 
+  } 
+  if(bundleSelected.size===0){ 
+    toast("请至少选择 1 个子商品"); 
+    return; 
+  } 
+  if(bundleSelected.size===1){ 
+    const only=[...bundleSelected.values()][0]; 
+    if(!(only.qty>1)){ 
+      toast("仅包含 1 个商品时，数量必须 > 1"); 
+      return; 
+    } 
+  } else { 
+    let sum=0; 
+    for(const it of bundleSelected.values()) sum+=Number(it.ratio||0); 
+    if(sum!==100){ 
+      toast("多个子商品时，各分账比例之和必须为 100%"); 
+      return; 
+    } 
+  } 
+  const id=Math.max(0,...PRODUCTS.map(x=>x.id))+1; 
+  // 构建捆绑商品项目列表
+  const items = [];
+  for(const [productId, item] of bundleSelected.entries()){
+    items.push({
+      productId: productId,
+      qty: item.qty,
+      share: item.ratio
+    });
+  }
+  
+  PRODUCTS.push({
+    id,
+    name,
+    sku:"BUNDLE-"+String(id).padStart(3,"0"),
+    category,
+    status:"审核中",
+    price,
+    unit,
+    origin,
+    barcode,
+    share,
+    onshelf:false,
+    type:"bundle",
+    items: items
+  }); 
+  closeModal("modalBundle"); 
+  bundleSelected.clear(); 
+  toast("已提交新增捆绑商品申请（进入审核中）"); 
+  renderProducts(); 
+  fillSaleSelectors(); 
+}
+
+/* ---------- 销售管理 ---------- */
+
+// 新增：统一取销售时间区间（预售用预售起止）
+function getSaleRange(s){
+  if(s.type === "预售"){
+    return { start: s.presaleStart, end: s.presaleEnd };
+  }
+  return { start: s.start, end: s.end };
+}
+
+// 新增：列表展示用的时间文本
+function saleTimeText(s){
+  const r = getSaleRange(s);
+  return `${fmt(r.start)} ~ ${fmt(r.end)}`;
+}
+
+// 新增：列表展示用的价格文本
+function salePriceText(s){
+  if(s.type === "预售"){
+    const d = Number(s.deposit||0), f = Number(s.final||0);
+    return `定金${formatPrice(d)} + 尾款${formatPrice(f)}`;
+  }
+  return formatPrice(s.price);
+}
+
+// 替换：状态判定（兼容预售）
+function salesStatus(s){
+  const now = new Date();
+  const r = getSaleRange(s);
+  if(now < r.start) return "未开始";
+  if(now >= r.start && now < r.end) return "进行中";
+  return "已结束";
+}
+
+
+function salesStatus(s){ const now=new Date(); if(now<s.start) return "未开始"; if(now>=s.start && now<s.end) return "进行中"; return "已结束"; }
+function renderSales(){
+  renderKpiSales();
+
+  const pf = document.getElementById("saleProductFilter").value;
+  const tf = document.getElementById("saleTypeFilter").value;
+  const q = (document.getElementById("saleQ")?.value || "").trim();
+  const startVal = document.getElementById("saleStartFilter")?.value || "";
+  const endVal   = document.getElementById("saleEndFilter")?.value || "";
+
+  let list = [...SALES];
+  if (pf) list = list.filter(s => String(s.productId) === pf);
+  if (tf) list = list.filter(s => s.type === tf);
+
+  if (q) {
+    list = list.filter(s => {
+      const p = PRODUCTS.find(x => x.id === s.productId);
+      const hitId = String(s.id).includes(q);
+      const hitName = p && p.name && p.name.includes(q);
+      return hitId || hitName;
+    });
+  }
+
+  if (startVal || endVal) {
+    const rangeStart = startVal ? new Date(startVal) : new Date("1970-01-01T00:00:00");
+    const rangeEnd   = endVal   ? new Date(endVal)   : new Date("9999-12-31T23:59:59");
+    if (!isNaN(rangeStart.getTime()) && !isNaN(rangeEnd.getTime())) {
+      list = list.filter(s => {
+        const r = getSaleRange(s);
+        return rangeStart <= r.start && r.end <= rangeEnd;
+      });
+    }
+  }
+
+  document.getElementById("saleBody").innerHTML = list.map(s => {
+    const p = PRODUCTS.find(x => x.id === s.productId);
+    const actNames = ACTIVITIES.filter(a => a.saleIds.includes(s.id)).map(a => a.name).join("、") || "—";
+    return `<tr>
+      <td>${s.id}</td>
+      <td>${p ? p.name : "—"}</td>
+      <td>${s.type}</td>
+      <td>${saleTimeText(s)}</td>
+      <td>${salePriceText(s)}</td>
+      <td>${badge(salesStatus(s))}</td>
+      <td>${actNames}</td>
+      <td>
+        <div class="ops">
+          <button class="pill" onclick="viewSale(${s.id})">查看</button>
+          <button class="pill" onclick="assignAct(${s.id})">指定活动</button>
+          <button class="pill" onclick="deleteSale(${s.id})">删除销售</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+function fillSaleSelectors(){ const opts=PRODUCTS.map(p=>`<option value="${p.id}">${p.name}</option>`).join(""); document.getElementById("saleProduct").innerHTML=opts; document.getElementById("saleProductFilter").innerHTML='<option value="">全部商品</option>'+PRODUCTS.map(p=>`<option value="${p.id}">${p.name}</option>`).join(""); }
+document.getElementById("btnSaleSearch").onclick=renderSales;
+document.getElementById("btnNewSale").onclick=()=>{ openModal("modalSale"); fillSaleSelectors(); document.getElementById("saleStart").valueAsNumber=dateShift(0).getTime() - (new Date()).getTimezoneOffset()*60000; document.getElementById("saleEnd").valueAsNumber=dateShift(7).getTime() - (new Date()).getTimezoneOffset()*60000; };
+function submitSale(){ const productId=Number(document.getElementById("saleProduct").value); const type=document.getElementById("saleType").value; const start=new Date(document.getElementById("saleStart").value); const end=new Date(document.getElementById("saleEnd").value); const price=Number(document.getElementById("salePrice").value); if(!productId||!type||!start||!end||!price){ toast("请填写完整信息"); return; } if(!(end>start)){ toast("结束时间需晚于开始时间"); return; } const exists=SALES.some(s=> s.productId===productId && overlap(start,end,s.start,s.end)); if(exists){ toast("同一商品的销售时间段不可重叠"); return; } const id=Math.max(100,...SALES.map(x=>x.id))+1; SALES.push({id,productId,type,start,end,price,actIds:[]}); closeModal("modalSale"); toast("已新增销售"); renderSales(); }
+function viewSale(id){ const s=SALES.find(x=>x.id===id), p=PRODUCTS.find(x=>x.id===s.productId); document.getElementById("viewTitle").textContent="销售详情"; document.getElementById("viewBody").innerHTML=`<div class="grid"><div><div class="tag">销售ID</div><div>${s.id}</div></div><div><div class="tag">商品</div><div>${p?p.name:"—"}</div></div><div><div class="tag">类型</div><div>${s.type}</div></div><div><div class="tag">价格</div><div>${formatPrice(s.price)}</div></div><div><div class="tag">开始时间</div><div>${fmt(s.start)}</div></div><div><div class="tag">结束时间</div><div>${fmt(s.end)}</div></div><div><div class="tag">状态</div><div>${salesStatus(s)}</div></div></div>`; openModal("modalView"); }
+function deleteSale(id){ const s=SALES.find(x=>x.id===id); const now=new Date(); const hasOrders=ORDERS.some(o=>o.saleId===id); if((now>=s.start && now<s.end) || hasOrders){ toast("删除失败：销售进行中或有关联订单"); return; } SALES=SALES.filter(x=>x.id!==id); ACTIVITIES.forEach(a=> a.saleIds=a.saleIds.filter(sid=>sid!==id)); toast("已删除销售"); renderSales(); }
+function assignAct(saleId){ const list=ACTIVITIES.map(a=>`<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-id="${a.id}" ${a.saleIds.includes(saleId)?"checked":""}/> ${a.name}（${a.type}）</label>`).join(""); document.getElementById("viewTitle").textContent="指定活动至销售"; document.getElementById("viewBody").innerHTML=`<div class="note">为销售 ${saleId} 指定活动：</div>${list}<div class="divider"></div><button class="btn primary" onclick="saveAssign(${saleId})">保存</button>`; openModal("modalView"); }
+function saveAssign(saleId){
+  const checks=Array.from(document.querySelectorAll('#modalView input[type="checkbox"]'));
+  ACTIVITIES.forEach(a=>{
+    const checked = checks.find(c=>Number(c.dataset.id)===a.id && c.checked);
+    if(checked){
+      if(!a.saleIds.includes(saleId)) a.saleIds.push(saleId);
+    }else{
+      a.saleIds = a.saleIds.filter(id=>id!==saleId);
+    }
+  });
+
+  // 反向同步：该 sale 关联到哪些活动
+  const selectedActIds = checks.filter(c=>c.checked).map(c=>Number(c.dataset.id));
+  const sale = SALES.find(s=>s.id===saleId);
+  if(sale) sale.actIds = selectedActIds;
+
+  toast("已更新活动关联");
+  closeModal("modalView");
+  renderSales();
+  renderActivities();
+}
+
+/* ---------- 活动管理 ---------- */
+document.getElementById("btnNewAct").onclick=()=>{ openModal("modalAct"); resetActForm(); };
+document.getElementById("actTypeNew").addEventListener("change", renderActRuleFields);
+
+document.getElementById("btnActSearch").onclick=renderActivities;
+function submitAct(){
+  const name = $("actName").value.trim();
+  const type = $("actTypeNew").value;
+  const startVal = $("actStartNew").value;
+  const endVal   = $("actEndNew").value;
+
+  if(!name || !type || !startVal || !endVal){ toast("请完整填写活动名称、类型与时间"); return; }
+  const start = new Date(startVal), end = new Date(endVal);
+  if(!(end > start)){ toast("结束时间需晚于开始时间"); return; }
+
+  const ruleRet = getActRuleFromForm(type);
+  if(!ruleRet.ok){ toast(ruleRet.msg||"请完善活动规则"); return; }
+
+  const id = Math.max(200, ...ACTIVITIES.map(a=>a.id)) + 1;
+  ACTIVITIES.push({
+    id, name, type, status:"进行中",
+    start, end, rule: ruleRet.rule, saleIds:[]
+  });
+  closeModal("modalAct");
+  toast("已新增活动");
+  renderActivities();
+}
+
+// —— 活动规则UI（随类型变化） ——
+function renderActRuleFields(){
+  const t = $("actTypeNew").value;
+  const box = $("actRulesContainer");
+  if(!box) return;
+  if(t === "折扣"){
+    box.innerHTML = `
+      <div class="grid">
+        <div class="row">
+          <label>折扣比例(%) *</label>
+          <input type="number" id="actRuleDiscount" min="1" max="100" placeholder="90 表示 9折"/>
+        </div>
+        <div class="row">
+          <label>每人限购（件，可选）</label>
+          <input type="number" id="actRuleLimit" min="1" placeholder="可留空"/>
+        </div>
+      </div>`;
+  }else if(t === "满减"){
+    box.innerHTML = `
+      <div class="grid">
+        <div class="row">
+          <label>门槛金额(¥) *</label>
+          <input type="number" id="actRuleThreshold" min="0" step="0.01" placeholder="例如 300"/>
+        </div>
+        <div class="row">
+          <label>减免金额(¥) *</label>
+          <input type="number" id="actRuleMinus" min="0" step="0.01" placeholder="例如 30"/>
+        </div>
+      </div>`;
+  }else if(t === "优惠"){
+    box.innerHTML = `
+      <div class="row">
+        <label>优惠说明 *</label>
+        <textarea id="actRuleDesc" rows="2" placeholder="示例：下单立减10元 / 新客专享等"></textarea>
+      </div>`;
+  }else { // 团购
+    box.innerHTML = `
+      <div class="grid">
+        <div class="row">
+          <label>成团人数 *</label>
+          <input type="number" id="actRuleGroupSize" min="2" step="1" placeholder="例如 3"/>
+        </div>
+        <div class="row">
+          <label>团购价(¥) *</label>
+          <input type="number" id="actRuleGroupPrice" min="0" step="0.01" placeholder="例如 199"/>
+        </div>
+      </div>`;
+  }
+}
+
+function getActRuleFromForm(type){
+  if(type === "折扣"){
+    const pct = Number($("actRuleDiscount").value);
+    const limit = $("actRuleLimit").value ? Number($("actRuleLimit").value) : null;
+    if(!(pct>=1 && pct<=100)) return {ok:false, msg:"折扣比例需在 1-100 之间"};
+    if(limit!==null && !(limit>0)) return {ok:false, msg:"限购需为大于 0 的整数或留空"};
+    return {ok:true, rule:{discountPercent: Math.round(pct), ...(limit?{limit:Math.round(limit)}:{})}};
+  }
+  if(type === "满减"){
+    const th = Number($("actRuleThreshold").value);
+    const mn = Number($("actRuleMinus").value);
+    if(!(th>0) || !(mn>=0) || !(mn<th)) return {ok:false, msg:"满减需满足：门槛>0，减免≥0 且小于门槛"};
+    return {ok:true, rule:{threshold: Number(th.toFixed(2)), minus: Number(mn.toFixed(2))}};
+  }
+  if(type === "优惠"){
+    const desc = ($("actRuleDesc").value||"").trim();
+    if(!desc) return {ok:false, msg:"请填写优惠说明"};
+    return {ok:true, rule:{desc}};
+  }
+  // 团购
+  const size = Number($("actRuleGroupSize").value);
+  const price = Number($("actRuleGroupPrice").value);
+  if(!(size>=2) || !(price>=0)) return {ok:false, msg:"团购需满足：成团人数≥2，团购价≥0"};
+  return {ok:true, rule:{groupSize: Math.round(size), groupPrice: Number(price.toFixed(2))}};
+}
+
+function actRuleText(a){
+  switch(a.type){
+    case "折扣": {
+      const v=a.rule?.discountPercent, lim=a.rule?.limit;
+      return v? `${v}%${lim?`｜限购${lim}件/人`:''}` : "—";
+    }
+    case "满减": {
+      const t=a.rule?.threshold, m=a.rule?.minus;
+      return (t!=null && m!=null)? `满${t}减${m}` : "—";
+    }
+    case "优惠":   return a.rule?.desc || "—";
+    case "团购":   {
+      const n=a.rule?.groupSize, p=a.rule?.groupPrice;
+      const parts=[]; if(n) parts.push(`成团${n}人`); if(p!=null) parts.push(`团购价¥${p}`);
+      return parts.join("｜")||"—";
+    }
+    default: return "—";
+  }
+}
+
+function resetActForm(){
+  $("actName").value="";
+  $("actTypeNew").value="折扣";
+  const now=new Date();
+  $("actStartNew").value = toDatetimeLocal(now);
+  $("actEndNew").value = toDatetimeLocal(new Date(now.getTime()+7*24*60*60*1000));
+  renderActRuleFields();
+}
+function actAssignSales(actId){
+  const a = ACTIVITIES.find(x=>x.id===actId);
+  const list = SALES.map(s=>{
+    const p = PRODUCTS.find(x=>x.id===s.productId);
+    const checked = a.saleIds.includes(s.id) ? "checked" : "";
+    return `<label style="display:flex;gap:8px;align-items:center;margin:6px 0">
+      <input type="checkbox" data-id="${s.id}" ${checked}/>
+      #${s.id}｜${p?p.name:"—"}｜${fmt(s.start)} ~ ${fmt(s.end)}
+    </label>`;
+  }).join("");
+
+  $("viewTitle").textContent = "为活动指定参与销售";
+  $("viewBody").innerHTML = `
+    <div class="note">活动：${a.name}（${a.type}）</div>
+    <div style="margin:8px 0">${list||'<div class="tag">暂无销售</div>'}</div>
+    <div class="divider"></div>
+    <button class="btn primary" onclick="saveActAssign(${actId})">保存</button>`;
+  openModal("modalView");
+}
+
+function saveActAssign(actId){
+  const checks = Array.from(document.querySelectorAll('#modalView input[type="checkbox"]'));
+  const selSaleIds = checks.filter(c=>c.checked).map(c=>Number(c.dataset.id));
+  const a = ACTIVITIES.find(x=>x.id===actId);
+  a.saleIds = selSaleIds;
+
+  // 双向同步到 SALES.actIds
+  SALES.forEach(s=>{
+    s.actIds = s.actIds || [];
+    if(selSaleIds.includes(s.id)){
+      if(!s.actIds.includes(actId)) s.actIds.push(actId);
+    }else{
+      s.actIds = s.actIds.filter(id=>id!==actId);
+    }
+  });
+
+  toast("已更新活动关联销售");
+  closeModal("modalView");
+  renderActivities();
+  renderSales(); // 让销售列表也能看到最新关联
+}
+
+function renderActivities(){
+  renderKpiActs();
+
+  const q = $("actQ").value.trim();
+  const type = $("actType").value;
+  const startVal = $("actStartFilter").value || "";
+  const endVal   = $("actEndFilter").value   || "";
+  const useRange = !!(startVal || endVal);
+  const rangeStart = startVal ? new Date(startVal) : new Date("1970-01-01T00:00:00");
+  const rangeEnd   = endVal   ? new Date(endVal)   : new Date("9999-12-31T23:59:59");
+
+  let list = [...ACTIVITIES];
+
+  if(q) list = list.filter(a=> a.name.includes(q));
+  if(type) list = list.filter(a=> a.type === type);
+
+  if(useRange && !isNaN(rangeStart.getTime()) && !isNaN(rangeEnd.getTime())){
+    // 只有当所选时间段完全覆盖“活动起止时间”整段时，才算匹配
+    list = list.filter(a => rangeStart <= a.start && a.end <= rangeEnd);
+  }
+
+  $("actBody").innerHTML = list.map(a=>{
+    // “参与销售”栏：若选了时间范围，仅展示被所选时间段“完全覆盖”的销售
+    let salesStr = "—";
+    if((a.saleIds||[]).length){
+      const ids = (a.saleIds||[]).filter(sid=>{
+        if(!useRange) return true;
+        const s = SALES.find(x=>x.id===sid);
+        return s && rangeStart <= s.start && s.end <= rangeEnd;
+      });
+      salesStr = ids.map(id=>"#"+id).join("、") || "—";
+    }
+    return `<tr>
+      <td>${a.id}</td>
+      <td>${a.name}</td>
+      <td>${a.type}</td>
+      <td>${fmt(a.start)} ~ ${fmt(a.end)}</td>
+      <td>${badge(a.status)}</td>
+      <td>${salesStr}</td>
+      <td>
+        <div class="ops">
+          <button class="pill" onclick="viewAct(${a.id})">查看</button>
+          <button class="pill" onclick="actAssignSales(${a.id})">指定销售</button>
+          <button class="pill" onclick="toggleAct(${a.id})">${a.status==="进行中"?"取消":"恢复"}</button>
+          <button class="pill" onclick="removeAct(${a.id})">删除</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+function viewAct(id){
+  const a=ACTIVITIES.find(x=>x.id===id);
+  const sales = a.saleIds.map(sid=>"#"+sid).join("、") || "—";
+  $("viewTitle").textContent="活动详情";
+  $("viewBody").innerHTML=`
+    <div class="grid">
+      <div><div class="tag">活动ID</div><div>${a.id}</div></div>
+      <div><div class="tag">名称</div><div>${a.name}</div></div>
+      <div><div class="tag">类型</div><div>${a.type}</div></div>
+      <div><div class="tag">状态</div><div>${a.status}</div></div>
+      <div><div class="tag">开始时间</div><div>${fmt(a.start)}</div></div>
+      <div><div class="tag">结束时间</div><div>${fmt(a.end)}</div></div>
+      <div style="grid-column:1/-1"><div class="tag">规则</div><div>${actRuleText(a)}</div></div>
+      <div style="grid-column:1/-1"><div class="tag">关联销售</div><div>${sales}</div></div>
+    </div>`;
+  openModal("modalView");
+}
+function toggleAct(id){ const a=ACTIVITIES.find(x=>x.id===id); a.status=a.status==="进行中"?"已取消":"进行中"; toast("已更新活动状态"); renderActivities(); }
+function removeAct(id){ ACTIVITIES=ACTIVITIES.filter(a=>a.id!==id); SALES.forEach(s=> s.actIds=(s.actIds||[]).filter(x=>x!==id)); toast("已删除活动"); renderActivities(); }
+
+/* ---------- 订单管理（保持你给的逻辑） ---------- */
+document.getElementById("btnOrderSearch").onclick=renderOrders;
+document.getElementById("btnOrderQSearch").onclick=renderOrders;
+function renderOrders(){
+  renderKpiOrders();
+  const st=document.getElementById("orderStatus").value;
+  const prov=document.getElementById("orderProv").value, city=document.getElementById("orderCity").value;
+  const y=document.getElementById("orderYear").value, m=document.getElementById("orderMonth").value, d=document.getElementById("orderDay").value;
+  const q=document.getElementById("orderQ").value.trim();
+  let list=[...ORDERS];
+  if(st) list=list.filter(o=>o.status===st);
+  if(prov) list=list.filter(o=>o.province===prov);
+  if(city) list=list.filter(o=>o.city===city);
+  if(y||m||d){
+    list=list.filter(o=>{
+      const [yy,mm,dd]=o.date.split("-").map(n=>parseInt(n,10));
+      if(y && parseInt(y,10)!==yy) return false;
+      if(m && parseInt(m,10)!==mm) return false;
+      if(d && parseInt(d,10)!==dd) return false;
+      return true;
+    });
+  }
+  if(q){
+    list=list.filter(o=>{
+      const p=PRODUCTS.find(x=>x.id===o.productId);
+      return String(o.id).includes(q) || (p && p.name.includes(q)) || (o.phone && o.phone.includes(q));
+    });
+  }
+  document.getElementById("orderBody").innerHTML=list.map(o=>{
+    const p=PRODUCTS.find(x=>x.id===o.productId);
+    return `<tr>
+      <td>${o.id}</td>
+      <td>${p?p.name:"—"}</td>
+      <td>${badge(o.status)}</td>
+      <td>${o.waybill||"—"}</td>
+      <td>${o.weight??"—"}</td>
+      <td>${formatPrice(o.amount)}</td>
+      <td>
+        <div class="ops">
+          ${o.status==='待接受'?`<button class="pill" onclick="orderAccept(${o.id})">接受</button>`:''}
+          ${o.status==='待发货'?`<button class="pill" onclick="printWaybill(${o.id})">查看面单</button>`:''}
+          ${o.status!=='已完成'?`<button class="pill" onclick="finishOrder(${o.id})">标记完成</button>`:''}
+          <button class="pill" onclick="viewOrder(${o.id})">查看</button>
+          ${o.status!=='已发货'?`<button class="pill" onclick="orderCancel(${o.id})">取消</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+function viewOrder(id){
+  const o=ORDERS.find(x=>x.id===id), p=PRODUCTS.find(x=>x.id===o.productId);
+  document.getElementById("viewTitle").textContent="订单详情";
+  document.getElementById("viewBody").innerHTML=`
+    <div class="grid">
+      <div><div class="tag">订单ID</div><div>${o.id}</div></div>
+      <div><div class="tag">下单日期</div><div>${o.date}</div></div>
+      <div><div class="tag">商品</div><div>${p?p.name:"—"} × ${o.qty||1}</div></div>
+      <div><div class="tag">状态</div><div>${o.status}</div></div>
+      <div><div class="tag">买家</div><div>${o.buyer||"—"}</div></div>
+      <div><div class="tag">联系电话</div><div>${o.phone||"—"}</div></div>
+      <div><div class="tag">收货地区（省/市）</div><div>${o.province||"—"} / ${o.city||"—"}</div></div>
+      <div style="grid-column:1/2"><div class="tag">详细地址</div><div>${o.addr||"—"}</div></div>
+      <div><div class="tag">金额</div><div>${formatPrice(o.amount)}</div></div>
+      <div><div class="tag">运单号</div><div>${o.waybill||"—"}</div></div>
+      <div><div class="tag">重量</div><div>${o.weight??"—"}</div></div>
+    </div>`;
+  openModal("modalView");
+}
+function orderAccept(id){
+  const o=ORDERS.find(x=>x.id===id);
+  if(o.status!=="待接受"){ toast("仅待接受订单可执行"); return; }
+  o.status="待发货";
+  if(!o.waybill) o.waybill="WB"+Math.floor(Math.random()*1e10);
+  toast("已接受订单，进入待发货，并生成运单");
+  renderOrders();
+  printWaybill(id,true);
+}
+function printWaybill(id,auto=false){
+  const o=ORDERS.find(x=>x.id===id);
+  const p=PRODUCTS.find(x=>x.id===o.productId);
+  const wbHTML = `
+    <div class="waybill">
+      <h3>快递面单 / 订单明细</h3>
+      <div class="wb-row">
+        <div class="wb-box">
+          <strong>寄件人（商户）</strong>
+          <div>${MERCHANT.name}</div>
+          <div>${MERCHANT.contact}</div>
+          <div>${MERCHANT.addr}</div>
+        </div>
+        <div class="wb-box">
+          <strong>收件人（买家）</strong>
+          <div>${o.buyer||"—"}（${o.phone||"—"}）</div>
+          <div>${o.province||"—"} ${o.city||""}</div>
+          <div>${o.addr||"—"}</div>
+        </div>
+        <div class="wb-box" style="max-width:200px">
+          <strong>运单条码</strong>
+          <div class="wb-barcode">${(o.waybill||"").replace(/[^0-9]/g,'').slice(-12).padStart(12,'0')}</div>
+        </div>
+      </div>
+      <div class="wb-row">
+        <div class="wb-box" style="max-width:200px">
+          <strong>重量（kg）</strong>
+          <div id="wb-weight">${(o.weight??"—")}</div>
+        </div>
+      </div>
+      <table class="wb-table">
+        <thead><tr><th>订单号</th><th>商品</th><th>数量</th><th>下单日期</th><th>当前状态</th></tr></thead>
+        <tbody><tr><td>${o.id}</td><td>${p?p.name:"—"}</td><td>${o.qty||1}</td><td>${o.date||"—"}</td><td>${o.status}</td></tr></tbody>
+      </table>
+      <div class="print-actions">
+        <button class="btn" onclick="window.print()">打印</button>
+        <button class="btn primary" onclick="shipFromPreview(${o.id})">发货</button>
+      </div>
+    </div>`;
+  document.getElementById("viewTitle").textContent="运单预览";
+  document.getElementById("viewBody").innerHTML = wbHTML;
+  openModal("modalView");
+}
+function finishOrder(id){
+  const o=ORDERS.find(x=>x.id===id);
+  o.status="已完成";
+  toast("已标记完成"); renderOrders();
+}
+function orderCancel(id){
+  const o = ORDERS.find(x=>x.id===id);
+  if(!o) return;
+  if(o.status === "已发货"){
+    toast("已发货的订单不可取消");
+    return;
+  }
+  const i = ORDERS.findIndex(x=>x.id===id);
+  if(i===-1) return;
+  ORDERS.splice(i,1);
+  toast("订单已取消并从列表移除");
+  renderOrders();
+}
+
+/* ---------- 售后管理（新增） ---------- */
+let AF_TARGET_ID = null;
+function renderKpiAftersales(){
+  if (CURRENT_ROUTE !== 'aftersales') return;
+  const t = AFTERSALES;
+  const cnt = s => t.filter(x=>x.status===s).length;
+  kpiBar([
+    {label:"售后总数", value:t.length},
+    {label:"待审核", value:cnt("待审核")},
+    {label:"已审核", value:cnt("已审核")},
+    {label:"已取消", value:cnt("已取消")},
+    {label:"已验收", value:cnt("已验收")},
+  ]);
+}
+
+function renderAftersales(){
+  renderKpiAftersales();
+
+  const fid = ($("afId").value||"").trim();
+  const fOrder = ($("afOrderId").value||"").trim();
+  const fPhone = ($("afPhone").value||"").trim();
+  const fProdQ = ($("afProdQ").value||"").trim();
+  const fStatus = $("afStatus").value;
+  const fProv = $("afProv").value;
+  const fCity = $("afCity").value;
+
+  let list = [...AFTERSALES];
+
+  if(fid)   list = list.filter(a=> String(a.id).includes(fid));
+  if(fOrder)list = list.filter(a=> String(a.orderId).includes(fOrder));
+  if(fPhone)list = list.filter(a=> (a.phone||"").includes(fPhone));
+  if(fProdQ){
+    list = list.filter(a=>{
+      const p = PRODUCTS.find(x=>x.id===a.productId);
+      return p && p.name && p.name.includes(fProdQ);
+    });
+  }
+  if(fStatus) list = list.filter(a=> a.status===fStatus);
+  if(fProv)   list = list.filter(a=> a.province===fProv);
+  if(fCity)   list = list.filter(a=> a.city===fCity);
+
+  // 按提交时间倒序
+  list.sort((a,b)=> (b.submitTime?.getTime?.()||0) - (a.submitTime?.getTime?.()||0));
+
+  $("afBody").innerHTML = list.map(a=>{
+    const p = PRODUCTS.find(x=>x.id===a.productId);
+    const ops = renderAfOps(a);
+    return `<tr>
+      <td>${a.id}</td>
+      <td>${a.orderId||"—"}</td>
+      <td>${p?p.name:"—"}</td>
+      <td>${a.type||"—"}</td>
+      <td>${fmt(a.submitTime)}</td>
+      <td>${badge(a.status)}</td>
+      <td>${a.province||"—"} ${a.city||""}</td>
+      <td><div class="ops">${ops}</div></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="8" style="padding:40px;text-align:center;color:#94a3b8;">暂无售后</td></tr>`;
+}
+
+function renderAfOps(a){
+  const base = `<button class="pill" onclick="viewAfter('${a.id}')">查看详情</button>`;
+  if(a.status==="待审核"){
+    return base + `
+      <button class="pill" onclick="approveAfter('${a.id}')">同意</button>
+      <button class="pill" onclick="openAfReject('${a.id}')">不同意</button>`;
+  }
+  if(a.status==="已审核"){
+    return base + `
+      <button class="pill" onclick="markAfAccepted('${a.id}')">标记已验收</button>
+      <button class="pill" onclick="openAfCancel('${a.id}')">取消售后</button>`;
+  }
+  // 已取消 / 已验收
+  return base;
+}
+
+function genWaybill(){ return "WB" + Math.floor(Math.random()*1e10).toString().padStart(10,'0'); }
+function genServiceNo(){ return "SV" + Math.floor(Math.random()*1e7).toString().padStart(7,'0'); }
+
+function approveAfter(id){
+  const a = AFTERSALES.find(x=>x.id===id); if(!a) return;
+  // 同意后根据类型生成单据
+  if(a.type==="退货" || a.type==="换货"){
+    a.waybillNo = a.waybillNo || genWaybill();
+  }else if(a.type==="上门维修"){
+    a.serviceNo = a.serviceNo || genServiceNo();
+  }else if(a.type==="寄回维修"){
+    a.waybillNo = a.waybillNo || genWaybill();
+    a.serviceNo = a.serviceNo || genServiceNo();
+  }
+  a.status = "已审核";
+  a.auditTime = new Date();
+  toast("已同意售后申请");
+  renderAftersales();
+}
+
+function openAfReject(id){
+  AF_TARGET_ID = id;
+  $("afRejectReason").value = "";
+  openModal("modalAfReject");
+}
+function submitAfReject(){
+  if(!AF_TARGET_ID) return;
+  const a = AFTERSALES.find(x=>x.id===AF_TARGET_ID); if(!a) return;
+  const reason = ($("afRejectReason").value||"").trim();
+  if(!reason){ toast("请填写不同意理由"); return; }
+  a.rejectReason = reason;
+  a.status = "已取消";
+  // 不生成任何单据
+  closeModal("modalAfReject");
+  toast("已提交不同意理由，售后已取消");
+  renderAftersales();
+}
+
+function openAfCancel(id){
+  AF_TARGET_ID = id;
+  $("afCancelReason").value = "";
+  openModal("modalAfCancel");
+}
+function submitAfCancel(){
+  if(!AF_TARGET_ID) return;
+  const a = AFTERSALES.find(x=>x.id===AF_TARGET_ID); if(!a) return;
+  const reason = ($("afCancelReason").value||"").trim();
+  if(!reason){ toast("请填写取消理由"); return; }
+  a.cancelReason = reason;
+  // 取消已生成的运单/服务单（演示为清空字段）
+  delete a.waybillNo; delete a.serviceNo;
+  a.status = "已取消";
+  closeModal("modalAfCancel");
+  toast("已提交平台审核并取消售后");
+  renderAftersales();
+}
+
+function markAfAccepted(id){
+  const a = AFTERSALES.find(x=>x.id===id); if(!a) return;
+  if(a.status!=="已审核"){ toast("仅已审核状态可标记验收"); return; }
+  a.status = "已验收";
+  a.acceptTime = new Date();
+  toast("已标记为已验收");
+  renderAftersales();
+}
+
+function viewAfter(id){
+  const a = AFTERSALES.find(x=>x.id===id); if(!a) return;
+  const p = PRODUCTS.find(x=>x.id===a.productId);
+  const mediaHtml = (a.media||[]).map(u=>{
+    const low = String(u).toLowerCase();
+    if(low.endsWith(".mp4")||low.includes("video")) return `<video src="${u}" controls></video>`;
+    return `<img src="${u}" alt="凭证">`;
+  }).join("") || '<div class="tag">无上传凭证</div>';
+
+  $("viewTitle").textContent = "售后详情";
+  $("viewBody").innerHTML = `
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;">
+      <div><div class="tag">售后单号</div><div>${a.id}</div></div>
+      <div><div class="tag">订单ID</div><div>${a.orderId||"—"}</div></div>
+      <div><div class="tag">商品</div><div>${p?p.name:"—"}</div></div>
+      <div><div class="tag">售后类型</div><div>${a.type||"—"}</div></div>
+      <div><div class="tag">提交时间</div><div>${fmt(a.submitTime)}</div></div>
+      <div><div class="tag">状态</div><div>${a.status}</div></div>
+      <div><div class="tag">顾客</div><div>${a.customer||"—"}（${a.phone||"—"}）</div></div>
+      <div><div class="tag">地区</div><div>${a.province||"—"} ${a.city||""}</div></div>
+      ${a.waybillNo?`<div><div class="tag">运单号</div><div>${a.waybillNo}</div></div>`:""}
+      ${a.serviceNo?`<div><div class="tag">服务单号</div><div>${a.serviceNo}</div></div>`:""}
+      <div style="grid-column:1/-1"><div class="tag">顾客申请理由</div><div>${a.reason||"—"}</div></div>
+      <div style="grid-column:1/-1"><div class="tag">商品维修要求</div><div>${a.req||"—"}</div></div>
+      <div style="grid-column:1/-1"><div class="tag">凭证</div><div class="media-grid">${mediaHtml}</div></div>
+      ${a.rejectReason?`<div style="grid-column:1/-1"><div class="tag">不同意理由</div><div>${a.rejectReason}</div></div>`:""}
+      ${a.cancelReason?`<div style="grid-column:1/-1"><div class="tag">取消理由</div><div>${a.cancelReason}</div></div>`:""}
+    </div>`;
+  openModal("modalView");
+}
+
+// 绑定筛选按钮
+$("btnAfSearch") && ($("btnAfSearch").onclick = renderAftersales);
+
+
+/* ---------- 人员与账号（保持） ---------- */
+document.getElementById("btnEmpSearch").onclick=renderPeople;
+document.getElementById("btnNewEmp").onclick=()=> openModal("modalEmp");
+function submitEmp(){
+  const name = document.getElementById("empName").value.trim();
+  const account = document.getElementById("empAccount").value.trim();
+  const pwd = document.getElementById("empPassword").value;
+  const pwd2 = document.getElementById("empPassword2").value;
+  const role = document.getElementById("empRole").value;
+  const desc = document.getElementById("empDesc").value.trim();
+
+  if(!IS_ADMIN){ toast("仅管理员可新增员工"); return; }
+  if(!name || !account || !pwd || !pwd2 || !role){ toast("请完整填写带 * 的必填项"); return; }
+
+  const accOK = /^[A-Za-z0-9_]{4,20}$/.test(account);
+  if(!accOK){ toast("账号需为 4-20 位字母/数字/下划线"); return; }
+  if(pwd.length < 6){ toast("初始密码至少 6 位"); return; }
+  if(pwd !== pwd2){ toast("两次输入的密码不一致"); return; }
+
+  const exists = EMPLOYEES.some(e => (e.account || "").toLowerCase() === account.toLowerCase());
+  if(exists){ toast("该账号已存在，请更换"); return; }
+
+  const id = Math.max(400, ...EMPLOYEES.map(e=>e.id)) + 1;
+  EMPLOYEES.push({ id, name, role, status:"在职", account, desc, password: pwd });
+
+  document.getElementById("empName").value = "";
+  document.getElementById("empAccount").value = "";
+  document.getElementById("empPassword").value = "";
+  document.getElementById("empPassword2").value = "";
+  document.getElementById("empRole").value = "员工";
+  document.getElementById("empDesc").value = "";
+
+  closeModal("modalEmp");
+  toast("已新增员工");
+  renderPeople();
+}
+
+function renderPeople(){ renderKpiPeople(); const q=document.getElementById("empQ").value.trim(); let list=[...EMPLOYEES]; if(q) list=list.filter(e=> e.name.includes(q)); document.getElementById("empBody").innerHTML=list.map(e=>`<tr><td>${e.id}</td><td>${e.name}</td><td>${e.role}</td><td>${badge(e.status)}</td><td><div class="ops"><button class="pill" onclick="empToggle(${e.id})">${e.status==="在职"?"暂停":"恢复"}</button><button class="pill" onclick="empRemove(${e.id})" ${!IS_ADMIN?'disabled':''}>删除</button></div></td></tr>`).join(""); }
+function empToggle(id){ const e=EMPLOYEES.find(x=>x.id===id); e.status=e.status==="在职"?"暂停":"在职"; toast("已更新员工状态"); renderPeople(); }
+function empRemove(id){ if(!IS_ADMIN){ toast("仅管理员可删除员工"); return; } EMPLOYEES=EMPLOYEES.filter(e=>e.id!==id); toast("已删除员工"); renderPeople(); }
+
+/* ---------- 服务与合同（旧：保留兼容，挂到隐藏DOM） ---------- */
+document.getElementById("btnSvcSearch").onclick=renderServices;
+document.getElementById("btnNewContract").onclick=()=> openModal("modalContract");
+function submitContract(){
+  const name=document.getElementById("svcName").value.trim(),
+        prov=document.getElementById("svcProvider").value.trim();
+  if(!name||!prov){ toast("请填写完整"); return; }
+  const id=Math.max(500,...CONTRACTS.map(c=>c.id))+1;
+  CONTRACTS.push({id, service:name, provider:prov, status:"待确认"});
+  closeModal("modalContract");
+  toast("已新增合同");
+  renderServices();
+}
+function renderServices(){ renderKpiServices(); const q=document.getElementById("svcQ").value.trim(); let list=[...CONTRACTS]; if(q) list=list.filter(c=> c.service.includes(q) || c.provider.includes(q)); document.getElementById("svcBody").innerHTML=list.map(c=>`<tr><td>${c.id}</td><td>${c.service}</td><td>${c.provider}</td><td>${badge(c.status)}</td><td><div class="ops"><button class="pill" onclick="svcSet(${c.id},'确认')">确认</button><button class="pill" onclick="svcSet(${c.id},'暂停')">暂停</button><button class="pill" onclick="svcSet(${c.id},'取消')">取消</button><button class="pill" onclick="svcRemove(${c.id})">删除</button></div></td></tr>`).join(""); }
+function svcSet(id, st){ const c=CONTRACTS.find(x=>x.id===id); c.status=st; toast("已更新合同状态"); renderServices(); }
+function svcRemove(id){ CONTRACTS=CONTRACTS.filter(c=>c.id!==id); toast("已删除合同"); renderServices(); }
+
+/* ---------- 支付与账务 ---------- */
+document.getElementById("btnFinSearch").onclick=renderFinance;
+function renderFinance(){ renderKpiFinance(); const type=document.getElementById("finType").value; let list=[...PAYMENTS]; if(type) list=list.filter(p=> p.type===type); document.getElementById("finBody").innerHTML=list.map(p=>`<tr><td>${p.id}</td><td>${p.type}</td><td>${p.orderId}</td><td>${formatPrice(p.amount)}</td><td>${badge(p.status)}</td><td><div class="ops"><button class="pill" onclick="finView('${p.id}')">查看</button><button class="pill" onclick="finMark('${p.id}')">标记完成</button></div></td></tr>`).join(""); }
+function finView(id){ const p=PAYMENTS.find(x=>x.id===id); document.getElementById("viewTitle").textContent="账务详情"; document.getElementById("viewBody").innerHTML=`<div class="grid"><div><div class="tag">单据ID</div><div>${p.id}</div></div><div><div class="tag">类型</div><div>${p.type}</div></div><div><div class="tag">订单ID</div><div>${p.orderId}</div></div><div><div class="tag">金额</div><div>${formatPrice(p.amount)}</div></div><div><div class="tag">状态</div><div>${p.status}</div></div></div>`; openModal("modalView"); }
+function finMark(id){ const p=PAYMENTS.find(x=>x.id===id); p.status="已完成"; toast("已标记完成"); renderFinance(); }
+
+/* ---------- Modal ---------- */
+function openModal(id){ document.getElementById(id).style.display="flex"; } function closeModal(id){ document.getElementById(id).style.display="none"; }
+
+/* ---------- 启动（默认进入登录） ---------- */
+function initApp(){ switchRoute("auth"); initProducts(); renderProducts(); fillSaleSelectors(); renderSales(); renderActivities(); renderOrders(); renderPeople(); renderServices(); renderFinance();  renderAftersales(); }
+window.addEventListener("DOMContentLoaded", initApp);
+
+/* ---------- 账号管理（新增子界面，不改动既有员工管理） ---------- */
+let ACCOUNT_APPLY = { modify: null, cancel: null };
+
+// 切换“员工管理 / 账号管理”
+(function initPeopleTabs(){
+  const tabs = document.getElementById("peopleTabs");
+  if(!tabs) return;
+  tabs.addEventListener("click", (e)=>{
+    const btn = e.target.closest(".switch-btn");
+    if(!btn) return;
+    for(const b of tabs.querySelectorAll(".switch-btn")) b.classList.remove("active");
+    btn.classList.add("active");
+    const view = btn.dataset.view;
+    document.getElementById("empPanel").style.display = (view==="emp"?"block":"none");
+    document.getElementById("accountPanel").style.display = (view==="account"?"block":"none");
+    if(view==="account") renderAccount();
+    else renderPeople();
+  });
+})();
+
+// 渲染账号管理面板
+function renderAccount(){
+  // 基本信息优先取 MERCHANT，其次取最近一次开户申请（如存在）
+  const app = (typeof OPEN_APPS!=="undefined" && OPEN_APPS.length) ? OPEN_APPS[0] : {};
+  const name = (MERCHANT && MERCHANT.name) || app.name || "—";
+  const contactName = (MERCHANT && MERCHANT.contactName) || app.contact || "—";
+  const phone = (MERCHANT && MERCHANT.contact) || app.phone || "—";
+  const addr = (MERCHANT && MERCHANT.addr) || app.addr || "—";
+  const prodLimit = (MERCHANT && MERCHANT.prodLimit!=null) ? MERCHANT.prodLimit : (app.prodLimit!=null ? app.prodLimit : "—");
+  const staffLimit = (MERCHANT && MERCHANT.staffLimit!=null) ? MERCHANT.staffLimit : (app.staffLimit!=null ? app.staffLimit : "—");
+  const accStatus = (MERCHANT && MERCHANT.accountStatus) || "已开通";
+
+  document.getElementById("accName").textContent = name;
+  document.getElementById("accStatus").textContent = accStatus;
+  document.getElementById("accContact").textContent = contactName + " / " + phone;
+  document.getElementById("accAddr").textContent = addr;
+  document.getElementById("accProdLimit").textContent = prodLimit;
+  document.getElementById("accStaffLimit").textContent = staffLimit;
+
+  const ms = ACCOUNT_APPLY.modify ? (ACCOUNT_APPLY.modify.status + "（" + fmt(ACCOUNT_APPLY.modify.time) + "）") : "—";
+  const cs = ACCOUNT_APPLY.cancel ? (ACCOUNT_APPLY.cancel.status + "（" + fmt(ACCOUNT_APPLY.cancel.time) + "）") : "—";
+  document.getElementById("accModifyStatus").textContent = ms;
+  document.getElementById("accCancelStatus").textContent = cs;
+}
+
+// 打开“修改账户”弹窗
+function openAccountModifyModal(){
+  if(!IS_ADMIN){ toast("仅管理员可提交修改申请"); return; }
+  const app = (typeof OPEN_APPS!=="undefined" && OPEN_APPS.length) ? OPEN_APPS[0] : {};
+  document.getElementById("am_name").value = (MERCHANT && MERCHANT.name) || app.name || "";
+  document.getElementById("am_prod").value = (MERCHANT && MERCHANT.prodLimit!=null) ? MERCHANT.prodLimit : (app.prodLimit||"");
+  document.getElementById("am_staff").value = (MERCHANT && MERCHANT.staffLimit!=null) ? MERCHANT.staffLimit : (app.staffLimit||"");
+  openModal("modalAccountEdit");
+}
+
+// 提交“修改账户”申请（记录申请，不直接改数据）
+function submitAccountModify(){
+  const name = document.getElementById("am_name").value.trim();
+  const prod = Number(document.getElementById("am_prod").value);
+  const staff = Number(document.getElementById("am_staff").value);
+  if(!name || !(prod>0) || !(staff>0)){
+    toast("请填写完整且为有效数字");
+    return;
+  }
+  ACCOUNT_APPLY.modify = {
+    status: "待审核",
+    time: new Date(),
+    payload: { name, prodLimit: prod, staffLimit: staff }
+  };
+  closeModal("modalAccountEdit");
+  toast("已提交修改申请，等待审核");
+  renderAccount();
+}
+
+// 打开“销户申请”弹窗
+function openAccountCancelModal(){
+  if(!IS_ADMIN){ toast("仅管理员可提交销户申请"); return; }
+  document.getElementById("ac_reason").value = "";
+  openModal("modalAccountCancel");
+}
+
+// 提交“销户”申请（记录状态）
+function submitAccountCancel(){
+  const reason = document.getElementById("ac_reason").value.trim();
+  if(!reason){
+    toast("请填写销户原因");
+    return;
+  }
+  ACCOUNT_APPLY.cancel = {
+    status: "已提交",
+    time: new Date(),
+    reason
+  };
+  closeModal("modalAccountCancel");
+  toast("已提交销户申请");
+  renderAccount();
+}
+
+
+
+function shipFromPreview(id){
+  const o = ORDERS.find(x=>x.id===id);
+  if(!o){ toast("订单不存在"); return; }
+  const w = prompt("请输入重量（kg）", o.weight ?? "");
+  if(w===null) return;
+  const num = Number(w);
+  if(!(num>0)){ toast("重量需大于 0"); return; }
+  o.weight = num;
+  o.status = "已发货";
+  toast("已发货并更新重量信息");
+  printWaybill(id, true);
+  renderOrders();
+}
+</script>
+
+<!-- ✅ 新增：服务详情弹窗 -->
+<div class="modal" id="modalServiceDetail">
+  <div class="card">
+    <header>服务详情</header>
+    <div class="content" id="svcDetailBody"></div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalServiceDetail')">关闭</button>
+    </footer>
+  </div>
+</div>
+
+
+<!-- ✅ 新增：服务弹窗（增强） -->
+<div class="modal" id="modalService">
+  <div class="card">
+    <header id="svcModalTitle">新增服务</header>
+    <div class="content">
+      <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">服务名称 *</label><input id="svc_name" type="text"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">服务类型 *</label>
+          <select id="svc_type"><option>维修</option><option>物流</option><option>仓储</option><option>其他</option></select>
+        </div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">开始时间</label><input id="svc_start" type="datetime-local"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">结束时间</label><input id="svc_end" type="datetime-local"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">服务地区</label><input id="svc_region" type="text" placeholder="如：华东片区/上海仓"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">适用商品（多选）</label>
+          <select id="svc_products" multiple style="height:44px"></select>
+        </div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">服务商</label><input id="svc_provider" type="text"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">备注</label><input id="svc_note" type="text"/></div>
+      </div>
+      <div class="note">说明：适用商品来源于“商品管理”的商品列表；多选请按住 Ctrl/Cmd。</div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalService')">取消</button>
+      <button class="btn primary" onclick="saveService()">保存</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ✅ 新增：合同弹窗（增强，不替换原有简版 modalContract） -->
+<div class="modal" id="modalContractPlus">
+  <div class="card">
+    <header id="contractTitlePlus">新增合同</header>
+    <div class="content">
+      <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
+<!-- 关联商品（多选） -->
+<div class="row" style="flex-direction:column;align-items:stretch">
+  <label class="tag">关联商品（多选）</label>
+  <select id="contract_products" multiple style="height:44px"></select>
+</div>
+
+<!-- 签订时间 -->
+<div class="row" style="flex-direction:column;align-items:stretch">
+  <label class="tag">签订时间</label>
+  <input id="contract_signTime" type="datetime-local"/>
+</div>
+
+<!-- 服务条款（整行） -->
+<div class="row" style="grid-column:1/-1;flex-direction:column;align-items:stretch">
+  <label class="tag">服务条款</label>
+  <textarea id="contract_terms" rows="3" placeholder="补充服务条款与注意事项"></textarea>
+</div>
+
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">服务商品（合同名）*</label><input id="contract_service" type="text"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">服务商</label><input id="contract_provider" type="text"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">开始时间</label><input id="contract_start" type="datetime-local"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">结束时间</label><input id="contract_end" type="datetime-local"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">服务地区</label><input id="contract_place" type="text"/></div>
+        <div class="row" style="flex-direction:column;align-items:stretch"><label class="tag">状态</label>
+<select id="contract_status">
+  <option>待确认</option>
+  <option>已确认</option>
+  <option>已拒绝</option>
+  <option>暂停中</option>
+  <option>已取消</option>
+</select>
+
+        </div>
+        <div class="row" style="grid-column:1/-1;flex-direction:column;align-items:stretch"><label class="tag">适用服务/备注</label><textarea id="contract_note" rows="2" placeholder="可填写适用服务条目或备注说明"></textarea></div>
+      </div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalContractPlus')">取消</button>
+      <button class="btn primary" onclick="saveContractPlus()">保存合同</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal" id="modalContractCancel">
+  <div class="card">
+    <header>取消合同（提交取消申请）</header>
+    <div class="content">
+      <div class="row">
+        <label>取消原因 *</label>
+        <textarea id="contract_cancel_reason" rows="3" placeholder="说明取消理由"></textarea>
+      </div>
+      <div class="note">提交后合同状态将变为“已取消”。</div>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeModal('modalContractCancel')">返回</button>
+      <button class="btn primary" onclick="submitCancelContract()">提交取消</button>
+    </footer>
+  </div>
+</div>
+
+
+<!-- ✅ 新增：二级页面脚本（独立追加，不改动原逻辑） -->
+<script>
+/* ================== 服务与合同（二级页面增强） ================== */
+
+/** 1) 数据源（服务独立于合同） */
+let SERVICES = [
+  {id:1001,name:'售后维修',type:'维修',start:'2025-01-01T08:00',end:'2025-12-31T23:59',region:'华东片区',products:['蓝牙耳机 Pro 1','无线音箱 Mini'],provider:'优修科技',note:'含上门',status:'进行中'},
+  {id:1002,name:'仓储与拣货',type:'仓储',start:'2025-03-01T00:00',end:'2026-03-01T00:00',region:'上海仓库',products:['充电宝 10000mAh'],provider:'XX 物流服务商',note:'包装分拣',status:'确认'}
+];
+
+/** A) 服务审核历史（演示数据，可替换为后端返回） */
+let SERVICE_AUDITS = {
+  1001: [
+    { time: '2025-09-20 10:00', action: '平台审核通过', result: '进行中', by: '平台', note: 'SLA：48小时上门' },
+    { time: '2025-09-18 15:30', action: '创建服务',   result: '待审核', by: '商户', note: '新建' }
+  ],
+  1002: [
+    { time: '2025-03-01 09:00', action: '平台审核通过', result: '确认', by: '平台' },
+    { time: '2025-02-25 14:12', action: '创建服务',   result: '待审核', by: '商户' }
+  ]
+};
+
+/** B) 写入一条审核历史（只新增记录，不改变既有流程） */
+function addServiceAudit(svcId, { action, result, by = '商户', note = '' } = {}){
+  if(!SERVICE_AUDITS[svcId]) SERVICE_AUDITS[svcId] = [];
+  SERVICE_AUDITS[svcId].unshift({
+    time: fmt(new Date()),
+    action: action || '—',
+    result: result || '—',
+    by,
+    note
+  });
+}
+
+/** C) 关联合同（按 服务名 / 服务商 / 关联商品 任何一个命中即认定有关联） */
+function svc2_findRelatedContracts(s){
+  const name = (s.name||'').toLowerCase();
+  const prov = (s.provider||'').toLowerCase();
+  const prodSet = new Set(s.products || []);
+  return (CONTRACTS||[]).filter(c=>{
+    const byName = (c.service||'').toLowerCase() === name;
+    const byProv = prov && (c.provider||'').toLowerCase() === prov;
+    const byProd = (c.products||[]).some(p=> prodSet.has(p));
+    return byName || byProv || byProd;
+  });
+}
+
+
+/** 2) 小工具 */
+function svc2_toLocal(t){ return t ? t.replace('T',' ') : '—'; }
+function svc2_timeRange(s,e){ return (s||e) ? `${svc2_toLocal(s)} ~ ${svc2_toLocal(e)}` : '—'; }
+function svc2_escape(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
+
+/** 3) 服务管理渲染 */
+function renderServiceMgmt(){
+  // KPI 仍沿用合同聚合，不改原逻辑
+  renderKpiServices();
+
+  const q = (document.getElementById('svcSearch').value||'').trim().toLowerCase();
+  const tf = document.getElementById('svcTypeFilter').value;
+  const rg = (document.getElementById('svcRegion').value||'').trim().toLowerCase();
+  const tbody = document.getElementById('svcMgmtBody');
+
+  let list = SERVICES.filter(s=>{
+    if(tf && s.type!==tf) return false;
+    if(rg && !(s.region||'').toLowerCase().includes(rg)) return false;
+    if(!q) return true;
+    const hay = [
+      (s.name||'').toLowerCase(),
+      (s.provider||'').toLowerCase(),
+      (s.products||[]).join(',').toLowerCase()
+    ].join('|');
+    return hay.includes(q);
+  });
+
+  if(!list.length){
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:28px;text-align:center;color:#64748b">暂无匹配的服务</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(s=>`
+    <tr>
+      <td>${s.id}</td>
+      <td>${svc2_escape(s.name)}</td>
+      <td>${s.type||'—'}</td>
+      <td>${svc2_timeRange(s.start,s.end)}</td>
+      <td>${svc2_escape(s.region||'')}</td>
+      <td>${svc2_escape((s.products||[]).join('，'))}</td>
+      <td>${badge(s.status||'进行中')}</td>
+      <td class="ops">
+  <button class="pill svc2-view" data-id="${s.id}">查看</button>
+  <button class="pill svc2-edit" data-id="${s.id}">修改</button>
+  <button class="pill svc2-toggle" data-id="${s.id}">${s.status==='已取消'?'恢复服务':'取消服务'}</button>
+</td>
+
+    </tr>
+  `).join('');
+}
+
+/** D) 打开服务详情弹窗 */
+function viewServiceDetail(id){
+  const s = SERVICES.find(x=>x.id===id);
+  if(!s){ toast('服务不存在'); return; }
+  const esc = svc2_escape;
+
+  // —— 基本信息
+  const baseHTML = `
+    <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
+      <div><div class="tag">服务名称</div><div>${esc(s.name)}</div></div>
+      <div><div class="tag">服务类型</div><div>${esc(s.type||'—')}</div></div>
+      <div><div class="tag">服务状态</div><div>${badge(s.status||'进行中')}</div></div>
+      <div><div class="tag">服务区域</div><div>${esc(s.region||'—')}</div></div>
+      <div style="grid-column:1/-1"><div class="tag">服务商品</div><div>${esc((s.products||[]).join('，')||'—')}</div></div>
+      <div><div class="tag">服务商</div><div>${esc(s.provider||'—')}</div></div>
+      <div><div class="tag">起止时间</div><div>${svc2_timeRange(s.start,s.end)}</div></div>
+      ${s.note?`<div style="grid-column:1/-1"><div class="tag">备注</div><div>${esc(s.note||'')}</div></div>`:''}
+    </div>`;
+
+  // —— 关联合同
+  const rel = svc2_findRelatedContracts(s);
+  const relTbl = rel.length ? `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:120px">合同编号</th>
+          <th style="width:160px">服务商</th>
+          <th>服务名称</th>
+          <th style="width:220px">关联商品</th>
+          <th style="width:180px">服务期限</th>
+          <th style="width:120px">状态</th>
+          <th style="width:160px">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rel.map(c=>`
+          <tr>
+            <td>${c.id}</td>
+            <td>${esc(c.provider||'')}</td>
+            <td>${esc(c.service||'')}</td>
+            <td>${esc((c.products||[]).join('，'))}</td>
+            <td>${svc2_timeRange(c.start,c.end)}</td>
+            <td>${badge((c.status||'待确认'))}</td>
+            <td><button class="pill" onclick="openContractModalPlus('view', ${c.id})">查看合同</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="tag">暂无关联合同</div>`;
+
+  // —— 历史审核记录
+  const audits = SERVICE_AUDITS[id] || [];
+  const auditTbl = audits.length ? `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:160px">时间</th>
+          <th style="width:160px">事件</th>
+          <th style="width:120px">结果/状态</th>
+          <th style="width:120px">操作人</th>
+          <th>备注</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${audits.map(a=>`
+          <tr>
+            <td>${esc(a.time||'')}</td>
+            <td>${esc(a.action||'')}</td>
+            <td>${esc(a.result||'')}</td>
+            <td>${esc(a.by||'')}</td>
+            <td>${esc(a.note||'')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  ` : `<div class="tag">暂无审核记录</div>`;
+
+  // —— 汇总到弹窗
+  const html = `
+    ${baseHTML}
+    <div style="margin-top:16px">
+      <div class="tag" style="margin-bottom:8px">关联的服务合同</div>
+      <div class="panel" style="padding:8px;">${relTbl}</div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="tag" style="margin-bottom:8px">服务历史审核记录</div>
+      <div class="panel" style="padding:8px;">${auditTbl}</div>
+    </div>
+  `;
+  document.getElementById('svcDetailBody').innerHTML = html;
+  openModal('modalServiceDetail');
+}
+
+
+/** 4) 合同管理渲染（复用原 CONTRACTS，支持更多字段但不破坏旧结构） */
+function normalizeContractStatus(s){
+  if (s === '确认') return '已确认';
+  if (s === '暂停') return '暂停中';
+  if (s === '取消') return '已取消';
+  if (s === '拒绝') return '已拒绝';
+  return s || '待确认';
+}
+
+
+function getContractOps(status, id){
+  if (status === '待确认') {
+    return `
+      <button class="pill contract2-view" data-id="${id}">查看</button>
+      <button class="pill contract2-confirm" data-id="${id}">确认</button>
+      <button class="pill contract2-reject" data-id="${id}">拒绝</button>
+    `;
+  }
+  if (status === '已确认') {
+    return `
+      <button class="pill contract2-view" data-id="${id}">查看</button>
+      <button class="pill contract2-pause" data-id="${id}">暂停</button>
+      <button class="pill contract2-cancel" data-id="${id}">取消</button>
+    `;
+  }
+  if (status === '暂停中') {
+    return `
+      <button class="pill contract2-view" data-id="${id}">查看</button>
+      <button class="pill contract2-resume" data-id="${id}">恢复</button>
+      <button class="pill contract2-cancel" data-id="${id}">取消</button>
+    `;
+  }
+  // 已取消 / 已拒绝
+  return `
+    <button class="pill contract2-view" data-id="${id}">查看</button>
+    <button class="pill contract2-delete" data-id="${id}">删除</button>
+  `;
+}
+
+
+function renderContractMgmt(){
+  renderKpiServices();
+
+  const q  = (document.getElementById('contractQ').value||'').trim().toLowerCase();
+  const st = document.getElementById('contractStatusFilter').value;
+  const tbody = document.getElementById('contractMgmtBody');
+
+  let list = CONTRACTS.filter(c=>{
+    const norm = normalizeContractStatus(c.status);
+    if (st && norm !== st) return false;
+    if(!q) return true;
+    return [(c.service||''),(c.provider||''),(c.place||''),(c.products||[]).join(',')]
+      .some(x=> String(x).toLowerCase().includes(q));
+  });
+
+  if(!list.length){
+    tbody.innerHTML = '<tr><td colspan="9" style="padding:28px;text-align:center;color:#64748b">暂无匹配合同</td></tr>';
+    return;
+  }
+
+  const esc = s=>svc2_escape(s||'');
+  tbody.innerHTML = list.map(c=>{
+    const norm = normalizeContractStatus(c.status);
+    const prods = (c.products||[]).join('，');
+    const term  = svc2_timeRange(c.start,c.end);
+    const sign  = svc2_toLocal(c.signTime);
+    return `
+      <tr>
+        <td>${c.id}</td>
+        <td>${esc(c.provider)}</td>
+        <td>${esc(c.service)}</td>
+        <td>${esc(prods)}</td>
+        <td>${esc(c.place||'')}</td>
+        <td>${term}</td>
+        <td>${sign}</td>
+        <td>${badge(norm)}</td>
+        <td class="ops">${getContractOps(norm, c.id)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+
+
+function confirmContract(id){
+  const c = CONTRACTS.find(x=>x.id===id); if(!c) return;
+  const norm = normalizeContractStatus(c.status);
+  if (norm !== '待确认'){ toast('当前状态不可确认'); return; }
+  c.status = '已确认';
+  toast('合同已确认');
+  renderContractMgmt();
+}
+
+function pauseContract(id){
+  const c = CONTRACTS.find(x=>x.id===id); if(!c) return;
+  const norm = normalizeContractStatus(c.status);
+  if (norm !== '已确认'){ toast('仅“已确认”合同可暂停'); return; }
+  c.status = '暂停中';
+  toast('合同已暂停');
+  renderContractMgmt();
+}
+
+function resumeContract(id){
+  const c = CONTRACTS.find(x=>x.id===id); if(!c) return;
+  const norm = normalizeContractStatus(c.status);
+  if (norm !== '暂停中'){ toast('当前状态不可恢复'); return; }
+  c.status = '已确认';
+  toast('合同已恢复为已确认');
+  renderContractMgmt();
+}
+
+function cancelContract(id){
+  const c = CONTRACTS.find(x=>x.id===id); if(!c) return;
+  const norm = normalizeContractStatus(c.status);
+  // 允许从“已确认”或“暂停中”取消
+  if (!['已确认','暂停中','待确认'].includes(norm)){ toast('当前状态不可取消'); return; }
+  c.status = '已取消';
+  toast('取消申请已提交');
+  renderContractMgmt();
+}
+
+function deleteContractRow(id){
+  const idx = CONTRACTS.findIndex(x=>x.id===id);
+  if (idx === -1) return;
+  CONTRACTS.splice(idx,1);
+  toast('合同已删除');
+  renderContractMgmt();
+}
+
+function rejectContract(id){
+  const c = CONTRACTS.find(x=>x.id===id); if(!c) return;
+  const norm = normalizeContractStatus(c.status);
+  if (norm !== '待确认'){ toast('当前状态不可拒绝'); return; }
+  c.status = '已拒绝';
+  toast('合同已拒绝');
+  renderContractMgmt();
+}
+
+function openCancelContractModal(id){
+  const modal = document.getElementById('modalContractCancel');
+  modal.dataset.cancelId = String(id);
+  document.getElementById('contract_cancel_reason').value = '';
+  openModal('modalContractCancel');
+}
+
+function submitCancelContract(){
+  const modal = document.getElementById('modalContractCancel');
+  const id = Number(modal.dataset.cancelId||0);
+  const c = CONTRACTS.find(x=>x.id===id); if(!c) return;
+  const reason = (document.getElementById('contract_cancel_reason').value||'').trim();
+  if(!reason){ toast('请填写取消原因'); return; }
+  c.cancelReason = reason;
+  c.status = '已取消';
+  closeModal('modalContractCancel');
+  toast('取消申请已提交');
+  renderContractMgmt();
+}
+
+
+/** 5) 服务弹窗 */
+function openServiceModal(mode,id){
+  const modal = document.getElementById('modalService');
+  document.getElementById('svcModalTitle').textContent = mode==='edit' ? '修改服务' : '新增服务';
+
+  // 填充商品多选（来源：现有 PRODUCTS）
+  const prodSel = document.getElementById('svc_products');
+  prodSel.innerHTML = PRODUCTS.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+
+  if(mode==='edit'){
+    const s = SERVICES.find(x=>x.id===id); if(!s) return;
+    modal.dataset.editId = String(id);
+    document.getElementById('svc_name').value   = s.name||'';
+    document.getElementById('svc_type').value   = s.type||'维修';
+    document.getElementById('svc_start').value  = s.start||'';
+    document.getElementById('svc_end').value    = s.end||'';
+    document.getElementById('svc_region').value = s.region||'';
+    document.getElementById('svc_provider').value = s.provider||'';
+    document.getElementById('svc_note').value   = s.note||'';
+    // 多选
+    for(const opt of prodSel.options){ opt.selected = (s.products||[]).includes(opt.value); }
+  }else{
+    modal.dataset.editId = '';
+    document.getElementById('svc_name').value = '';
+    document.getElementById('svc_type').value = '维修';
+    document.getElementById('svc_start').value= '';
+    document.getElementById('svc_end').value  = '';
+    document.getElementById('svc_region').value = '';
+    document.getElementById('svc_provider').value = '';
+    document.getElementById('svc_note').value = '';
+    for(const opt of prodSel.options){ opt.selected = false; }
+  }
+  openModal('modalService');
+}
+function saveService(){
+  const name = document.getElementById('svc_name').value.trim();
+  if(!name){ toast('请填写服务名称'); return; }
+  const type = document.getElementById('svc_type').value;
+  const start= document.getElementById('svc_start').value;
+  const end  = document.getElementById('svc_end').value;
+  const region = document.getElementById('svc_region').value.trim();
+  const provider = document.getElementById('svc_provider').value.trim();
+  const note = document.getElementById('svc_note').value.trim();
+  const products = Array.from(document.getElementById('svc_products').selectedOptions).map(o=>o.value);
+
+  const editingId = document.getElementById('modalService').dataset.editId;
+  if(editingId){
+    const s = SERVICES.find(x=>String(x.id)===editingId);
+    Object.assign(s,{name,type,start,end,region,provider,note,products});
+    toast('修改服务成功');
+    addServiceAudit(Number(editingId), { action:'修改服务基本信息', result:'已保存', by:'商户', note:name });
+  }else{
+    const newId = Math.max(1000, ...SERVICES.map(x=>x.id)) + 1;
+    SERVICES.unshift({id:newId,name,type,start,end,region,provider,note,products,status:'进行中'});
+    toast('新增服务成功');
+    addServiceAudit(newId, { action:'创建服务', result:'待审核→进行中', by:'商户', note:name });
+  }
+  closeModal('modalService');
+  renderServiceMgmt();
+}
+function toggleServiceStatus(id){
+  const s = SERVICES.find(x=>x.id===id); if(!s) return;
+  s.status = s.status==='已取消' ? '进行中' : '已取消';
+  toast(s.status==='已取消'?'服务已取消':'服务已恢复');
+  addServiceAudit(id, { action: (s.status==='已取消'?'取消服务':'恢复服务'), result: s.status, by:'商户' });
+  renderServiceMgmt();
+}
+
+/** 6) 合同弹窗（增强版，不影响你原来简版 modalContract） */
+function openContractModalPlus(mode,id){
+  const modal = document.getElementById('modalContractPlus');
+  document.getElementById('contractTitlePlus').textContent =
+    mode==='edit'?'修改合同':(mode==='view'?'查看合同':'新增合同');
+
+  // 动态填充“关联商品（多选）”
+  const prodSel = document.getElementById('contract_products');
+  prodSel.innerHTML = PRODUCTS.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+
+  const setRO = (ro)=>{
+    ['contract_service','contract_provider','contract_start','contract_end',
+     'contract_place','contract_status','contract_note',
+     'contract_signTime','contract_terms','contract_products']
+     .forEach(id=> {
+       const el = document.getElementById(id);
+       if(!el) return;
+       el.disabled = ro;
+     });
+  };
+
+  if(mode!=='new'){
+    const c = CONTRACTS.find(x=>x.id===id); if(!c) return;
+    modal.dataset.editId = String(id);
+    document.getElementById('contract_service').value  = c.service||'';
+    document.getElementById('contract_provider').value = c.provider||'';
+    document.getElementById('contract_start').value    = c.start||'';
+    document.getElementById('contract_end').value      = c.end||'';
+    document.getElementById('contract_place').value    = c.place||'';
+    document.getElementById('contract_status').value   = normalizeContractStatus(c.status||'待确认');
+    document.getElementById('contract_note').value     = c.note||'';
+    document.getElementById('contract_signTime').value = c.signTime||'';
+    document.getElementById('contract_terms').value    = c.terms||'';
+    // 多选选中
+    const chosen = new Set((c.products||[]));
+    for(const opt of prodSel.options){ opt.selected = chosen.has(opt.value); }
+
+    setRO(mode==='view');
+  }else{
+    modal.dataset.editId = '';
+    ['contract_service','contract_provider','contract_start','contract_end','contract_place',
+     'contract_note','contract_signTime','contract_terms'].forEach(id=> document.getElementById(id).value='');
+    document.getElementById('contract_status').value = '待确认';
+    for(const opt of prodSel.options){ opt.selected = false; }
+    // 默认签订时间给当前时间（本地时区）
+    const now = new Date(); now.setSeconds(0,0);
+    const pad=n=>String(n).padStart(2,'0');
+    const toLocal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('contract_signTime').value = toLocal;
+
+    setRO(false);
+  }
+  openModal('modalContractPlus');
+}
+
+function saveContractPlus(){
+  const service  = document.getElementById('contract_service').value.trim();
+  if(!service){ toast('请填写服务商品/合同名'); return; }
+  const provider = document.getElementById('contract_provider').value.trim();
+  const start    = document.getElementById('contract_start').value;
+  const end      = document.getElementById('contract_end').value;
+  const place    = document.getElementById('contract_place').value.trim();
+  const status   = document.getElementById('contract_status').value;
+  const note     = document.getElementById('contract_note').value.trim();
+  const signTime = document.getElementById('contract_signTime').value;
+  const terms    = document.getElementById('contract_terms').value.trim();
+  const products = Array.from(document.getElementById('contract_products').selectedOptions).map(o=>o.value);
+
+  const editingId = document.getElementById('modalContractPlus').dataset.editId;
+  if(editingId){
+    const c = CONTRACTS.find(x=>String(x.id)===editingId);
+    Object.assign(c,{service,provider,start,end,place,status,note,signTime,terms,products});
+    toast('合同已修改');
+  }else{
+    const newId = Math.max(500, ...CONTRACTS.map(c=>c.id)) + 1;
+    CONTRACTS.unshift({id:newId,service,provider,start,end,place,status,note,signTime,terms,products});
+    toast('新增合同成功');
+  }
+  closeModal('modalContractPlus');
+  renderContractMgmt();
+}
+
+/** 7) 导出（演示） */
+function exportServices(){ toast('已导出服务（演示）'); }
+function exportContracts(){ toast('已导出合同（演示）'); }
+
+/** 8) 事件绑定 & 标签切换 & 初始化（覆盖旧按钮行为） */
+function initSvcContractUI(){
+  // 标签切换
+  document.getElementById('svcTabBar').addEventListener('click', e=>{
+    const t = e.target.closest('.tab'); if(!t) return;
+    document.querySelectorAll('#svcTabBar .tab').forEach(x=>x.classList.toggle('active', x===t));
+    const tab = t.dataset.tab;
+    document.getElementById('svcSection').classList.toggle('hidden', tab!=='service');
+    document.getElementById('contractSection').classList.toggle('hidden', tab!=='contract');
+    // 切换时刷新
+    if(tab==='service') renderServiceMgmt(); else renderContractMgmt();
+  });
+
+  // 服务管理
+  document.getElementById('svcSearch').addEventListener('input', renderServiceMgmt);
+  document.getElementById('svcTypeFilter').addEventListener('change', renderServiceMgmt);
+  document.getElementById('svcRegion').addEventListener('input', renderServiceMgmt);
+  document.getElementById('btnExportSvc').addEventListener('click', exportServices);
+  document.getElementById('btnNewService').addEventListener('click', ()=> openServiceModal('new'));
+
+  // 合同管理（覆盖旧的 onclick，使其打开增强版弹窗）
+  const newBtn = document.getElementById('btnNewContract');
+  if(newBtn){ newBtn.onclick = ()=> openContractModalPlus('new'); }
+  document.getElementById('contractStatusFilter').addEventListener('change', renderContractMgmt);
+  document.getElementById('contractQ').addEventListener('input', renderContractMgmt);
+  document.getElementById('btnExportContract').addEventListener('click', exportContracts);
+
+  // 表格内操作（事件委托）
+  document.addEventListener('click', (e)=>{
+    const el = e.target;
+    if(el.classList.contains('svc2-edit')){ openServiceModal('edit', Number(el.dataset.id)); }
+    if(el.classList.contains('svc2-toggle')){ toggleServiceStatus(Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-edit')){ openContractModalPlus('edit', Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-view')){ openContractModalPlus('view', Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-confirm')){ confirmContract(Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-pause')){   pauseContract(Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-resume')){  resumeContract(Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-cancel')){  cancelContract(Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-delete')){  deleteContractRow(Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-reject')){  rejectContract(Number(el.dataset.id)); }
+    if(el.classList.contains('contract2-cancel')){  openCancelContractModal(Number(el.dataset.id)); }
+    if(el.classList.contains('svc2-view')){ viewServiceDetail(Number(el.dataset.id)); }
+
+
+  });
+
+  // 为侧栏切到“服务与合同”时也刷新：包一层 render
+  if(window.ROUTES && ROUTES.services){
+    const oldRender = ROUTES.services.render;
+    ROUTES.services.render = function(){
+      try{ typeof oldRender==='function' && oldRender(); }catch(e){}
+      renderServiceMgmt();
+      renderContractMgmt();
+    };
+  }
+
+  // 初次渲染：默认展示“服务管理”
+  renderServiceMgmt();
+}
+window.addEventListener('DOMContentLoaded', initSvcContractUI);
+</script>
+</body>
+</html>
