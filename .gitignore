@@ -1,0 +1,15 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Maven
+target/
+.flattened-pom.xml
+
+# OS
+.DS_Store
+
+# Codex local workspace
+work/
+outputs/

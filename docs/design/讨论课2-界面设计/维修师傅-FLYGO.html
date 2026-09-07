@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FLYGO · 维修师傅端</title>
+  <style>
+    :root{
+  /* ===== 主题色（可按需调整） ===== */
+  --bg: linear-gradient(120deg,#eef2ff 0%, #f7f9fe 45%, #ecfeff 100%); /* 页面大背景不再纯白 */
+  --chrome:#0f172a;             /* 头部/侧边底色（深色） */
+  --chrome-2:#111827;           /* 侧边条 hover/active 辅色 */
+  --on-chrome:#e8edff;          /* 深色底上的文字/图标 */
+  --panel:#ffffff;              /* 内容卡片面板底色（仍以浅色为主，保证可读性） */
+  --panel-2:#f5f7ff;            /* 次级面板/表头底色 */
+  --border:#7dd3fc;             /* Tailwind sky-300 类似，亮且不深 */
+  --text:#0f172a;               /* 主文字色（非纯黑） */
+  --muted:#64748b;              /* 次要文字 */
+  --primary:#4f46e5;            /* 主色：Indigo */
+  --primary-weak:#eef2ff;       /* 主色弱化背景 */
+  --accent:#dbeafe;             /* 点缀浅蓝 */
+  --shadow: 0 10px 30px rgba(79,70,229,.10), 0 2px 10px rgba(15,23,42,.06);
+  --radius: 16px;
+}
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans",sans-serif;}
+    .app{display:grid;grid-template-columns:260px 1fr;grid-template-rows:64px 1fr;grid-template-areas:"header header" "sidebar main";height:100%;}
+    header{grid-area:header;background:var(--panel-2);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);}
+    header .brand{font-weight:700;font-size:18px;letter-spacing:0.2px;}
+    header .user{display:flex;gap:8px;align-items:center;border:1px solid var(--border);padding:8px 12px;border-radius:10px;background:#fff;}
+    aside{grid-area:sidebar;border-right:1px solid var(--border);background:#fff;overflow:auto;}
+    main{grid-area:main;overflow:auto;padding:16px 20px;}
+    .nav{padding:12px 10px;}
+    .nav h4{margin:8px 8px 10px;font-size:13px;color:var(--muted);}
+    .nav .item{padding:10px 12px;margin:6px 8px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+    .nav .item.active{background:var(--accent);font-weight:600;}
+    .crumb{margin:6px 0 8px;color:var(--muted);}
+    .section{display:none;} .section.active{display:block;}
+    .kpi{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;}
+    .kpi .box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-width:160px;}
+    .panel{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .toolbar{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px;flex-wrap:wrap;}
+    input[type="text"], select, input[type="number"], input[type="datetime-local"]{height:36px;border:1px solid var(--border);border-radius:10px;padding:0 10px;background:#fff;min-width:140px;}
+    .btn{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 14px;cursor:pointer;background:#fff;}
+    .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .btn[disabled]{opacity:.5;cursor:not-allowed;}
+    .stack{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .tag{font-size:12px;color:var(--muted);}
+    table{width:100%;border-collapse:separate;border-spacing:0;}
+    thead th{background:var(--panel-2);text-align:left;padding:12px;border-bottom:1px solid var(--border);font-weight:600;}
+    tbody td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    .footer{display:flex;align-items:center;justify-content:space-between;padding:10px;color:var(--muted);}
+    .badge{display:inline-flex;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);font-size:12px;}
+    .badge.ok{border-color:#dcfce7;color:#166534;background:#f0fdf4;}
+    .badge.warn{border-color:#fef3c7;color:#92400e;background:#fffbeb;}
+    .badge.err{border-color:#fee2e2;color:#991b1b;background:#fef2f2;}
+    .ops{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+    .pill{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer;font-size:12px;}
+    .pill:hover{border-color:var(--primary);}
+    .muted{color:var(--muted);}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:30;}
+    .card{width:min(980px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;border:1px solid var(--border);}
+    .card header{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:700;}
+    .card .content{padding:14px 16px;}
+    .card footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .toast{position:fixed;right:16px;bottom:16px;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none;z-index:100;}
+    .chip{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid var(--border);border-radius:999px;margin-right:6px;font-size:12px;background:#fff;}
+    .progress{height:6px;background:#e5e7eb;border-radius:999px;overflow:hidden;}
+    .bar{height:6px;background:#111827;}
+    /* 签名板 */
+    #sigPad{border:1px dashed var(--border);border-radius:10px;background:#fff;touch-action:none;}
+  
+/* ===== 统一头部/侧边深色底、卡片边框与阴影 ===== */
+html,body{background:var(--bg);background-attachment:fixed;}
+header{background:linear-gradient(90deg, var(--chrome) 0%, #182135 60%, #1e293b 100%);border-bottom:1px solid rgba(232,237,255,.18)}
+header .brand{color:var(--on-chrome);font-weight:800}
+header .user{border-color:rgba(232,237,255,.28);background:rgba(255,255,255,.06);color:var(--on-chrome)}
+aside{background:linear-gradient(180deg, var(--chrome) 0%, #111827 100%);color:var(--on-chrome)}
+.nav h4{color:#94a3b8}
+.nav .item{color:var(--on-chrome)}
+.nav .item.active{background:rgba(255,255,255,.08);border:1px solid rgba(232,237,255,.18)}
+.kpi .box,.panel,.toolbar{border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);background:var(--panel)}
+thead th{background:var(--panel-2);color:#334155}
+input[type="text"], select, input[type="number"], input[type="date"], input[type="datetime-local"], textarea{
+  border:1px solid var(--border);background:#fff;border-radius:12px;transition:all .15s
+}
+input:focus, select:focus, textarea:focus{outline:none;border-color:#aab9ff; box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+.btn{height:40px;border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;background:#fff;transition:all .15s; font-weight:600;color:#334155;}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+.btn.primary:hover{filter:brightness(.96); transform: translateY(-1px);}
+.pill:hover{border-color:#8fa2ff;background:#f0f4ff;}
+.overlay{background:rgba(15,23,42,.45)}
+.card{background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow)}
+.card header,.card footer{background:var(--panel-2)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">FLYGO · 维修师傅端</div>
+    <div class="user">当前师傅：<strong>刘工</strong> ｜ <span id="dutyBadge" class="badge ok">上班</span></div>
+  </header>
+  <aside>
+    <div class="nav">
+      <h4>导航</h4>
+      <div class="item active" data-route="pending">待预约</div>
+      <div class="item" data-route="scheduled">已预约</div>
+      <div class="item" data-route="me">我的</div>
+    </div>
+  </aside>
+  <main>
+    <div id="routeTitle" class="crumb">首页 / 待预约</div>
+    <div class="kpi" id="kpiBar"></div>
+
+    <!-- 待预约 -->
+    <section id="page-pending" class="section active">
+      <div class="toolbar">
+        <input id="pendingQ" type="text" placeholder="工单/客户/服务" />
+        <button class="btn" id="btnPendingSearch">搜索</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">工单ID</th>
+            <th style="width:80px">类型</th>
+            <th>服务 / 客户</th>
+            <th style="width:120px">距离</th>
+            <th style="width:120px">匹配度</th>
+            <th style="width:140px">状态</th>
+            <th style="width:360px">操作</th>
+          </tr></thead>
+          <tbody id="pendingBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 已预约 -->
+    <section id="page-scheduled" class="section">
+       <div class="toolbar">
+        <select id="scheduledStatus">
+          <option value="incomplete">待完成</option>
+          <option value="complete">已完成</option>
+        </select>
+        <input id="scheduledQ" type="text" placeholder="工单/客户/服务" />
+        <button class="btn" id="btnScheduledSearch">搜索</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr><th style="width:120px">工单ID</th><th style="width:100px">类型</th><th>服务 / 客户</th><th style="width:140px">预约</th><th style="width:140px">状态</th><th style="width:420px">操作</th></tr></thead>
+          <tbody id="scheduledBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 我的 -->
+    <section id="page-me" class="section">
+      <div class="panel" style="padding:14px;">
+        <div class="grid">
+          <div>
+            <div class="tag">基础信息</div>
+            <div style="font-weight:700;margin:4px 0">刘工 · 维修工程师</div>
+            <div class="tag">技能</div>
+            <div class="chip">手机</div><div class="chip">家电</div><div class="chip">入户安装</div>
+            <div class="tag" style="margin-top:10px;">服务区域</div>
+            <div class="chip">上海 · 闵行</div><div class="chip">上海 · 徐汇</div>
+          </div>
+          <div>
+            <div class="tag">接单偏好与出勤</div>
+            <div class="stack" style="margin:6px 0 10px">
+              <button class="btn" id="btnDuty">切换上班/休息</button>
+              <span id="dutyText" class="tag">当前：上班</span>
+            </div>
+            <div class="tag">通知设置</div>
+            <label class="chip"><input id="nt1" type="checkbox" checked style="margin-right:6px"> 工单提醒</label>
+            <label class="chip"><input id="nt2" type="checkbox" checked style="margin-right:6px"> 费用审批</label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 通用模态框 -->
+<div class="overlay" id="modal">
+  <div class="card">
+    <header id="modalTitle">标题</header>
+    <div class="content" id="modalBody"></div>
+    <footer id="modalFooter"><button class="btn" onclick="closeModal()">关闭</button></footer>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ---------------- Mock 数据 ---------------- */
+let ON_DUTY = true;
+let NOTICES = [];
+let WORKORDERS = [
+  // 状态机： 待预约 -> 待出发 -> 出发中 -> 诊断中 ->（待备件|维修中）-> 待验收 -> 已完成（或 已退回/已取消）
+  {id:1001, type:"维修", service:"手机屏幕更换", customer:"李先生", phone:"13000000001", address:"上海市闵行区*路88号", schedule:null, status:"待预约", distance: 3.2, match: 92, sla:endIn(2), notes:"碎屏", needParts:false, assignee:"我", diagnosis:null, parts:[], fees:[], signature:null},
+  {id:1002, type:"维修", service:"冰箱不制冷", customer:"王女士", phone:"13000000002", address:"上海市徐汇区*路66号", schedule:"今日 14:00-15:00", status:"待出发", distance: 6.4, match: 87, sla:endIn(5), notes:"压缩机疑似", needParts:false, assignee:"我", diagnosis:null, parts:[], fees:[], signature:null},
+  {id:1003, type:"返厂", service:"主板维修（返厂）", customer:"陈先生", phone:"13000000003", address:"上海市浦东新区*路28号", schedule:"今日 10:00-12:00", status:"出发中", distance: 12.3, match: 80, sla:endIn(24), notes:"进水", needParts:true, assignee:'我', diagnosis:null, parts:[], fees:[], signature:null},
+  {id:1004, type:"维修", service:"空调加氟", customer:"赵小姐", phone:"13000000004", address:"上海市长宁区*路168号", schedule:"明日 16:00-17:00", status:"诊断中", distance: 4.0, match: 88, sla:endIn(6), notes:"不制冷", needParts:false, assignee:"我", diagnosis:null, parts:[], fees:[], signature:null},
+  {id:1005, type:"维修", service:"洗衣机异响", customer:"周先生", phone:"13000000005", address:"上海市宝山区*路22号", schedule:"今日 13:00-14:00", status:"待备件", distance: 9.2, match: 85, sla:endIn(30), notes:"轴承损坏", needParts:true, assignee:"我", diagnosis:{result:"轴承损坏", suggestion:"更换轴承"}, parts:[{code:"P-AX01", name:"滚筒轴承", source:"仓库", qty:1, status:"在途"}], fees:[], signature:null},
+  {id:1006, type:"维修", service:"洗衣机异响", customer:"孙先生", phone:"13000000005", address:"上海市宝山区*路22号", schedule:"昨日 13:00-14:00", status:"已完成", distance: 9.2, match: 85, sla:endIn(30), notes:"轴承损坏", needParts:true, assignee:"我", diagnosis:{result:"轴承损坏", suggestion:"更换轴承"}, parts:[], fees:[], signature:"fake-sig"},
+  {id:1007, type:"维修", service:"电视安装", customer:"吴女士", phone:"13000000006", address:"上海市普陀区*路1号", schedule:"今日 11:00-12:00", status:"维修中", distance: 5.5, match: 95, sla:endIn(4), notes:"", needParts:false, assignee:"我", diagnosis:{result:"安装调试", suggestion:"壁挂安装"}, parts:[], fees:[], signature:null},
+  {id:1008, type:"维修", service:"热水器故障", customer:"郑先生", phone:"13000000007", address:"上海市静安区*路2号", schedule:"今日 17:00-18:00", status:"待验收", distance: 8.1, match: 90, sla:endIn(8), notes:"不加热", needParts:false, assignee:"我", diagnosis:{result:"加热棒故障", suggestion:"更换加热棒"}, parts:[], fees:[{name:"加热棒", amount: 120}], signature:null},
+  {id:1009, type:"维修", service:"油烟机清洗", customer:"冯女士", phone:"13000000008", address:"上海市黄浦区*路3号", schedule:"昨日 09:00-10:00", status:"已退回", distance: 2.5, match: 98, sla:endIn(1), notes:"客户临时取消", needParts:false, assignee:"我", diagnosis:null, parts:[], fees:[], signature:null},
+];
+
+function endIn(hours){ const d=new Date(); d.setHours(d.getHours()+hours,0,0,0); return d; }
+function fmt(dt){ const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,"0"), d=String(dt.getDate()).padStart(2,"0"), hh=String(dt.getHours()).padStart(2,"0"), mm=String(dt.getMinutes()).padStart(2,"0"); return `${y}-${m}-${d} ${hh}:${mm}`; }
+function $(id){ return document.getElementById(id); }
+function toast(msg, ms=1800){ const t=$("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none", ms); }
+function badge(s){
+  const ok=["已完成","诊断中","维修中","待验收","出发中", "待出发"];
+  const warn=["待预约","待备件"];
+  const err=["已取消", "已退回"];
+  if(ok.includes(s)) return '<span class="badge ok">'+s+'</span>';
+  if(warn.includes(s)) return '<span class="badge warn">'+s+'</span>';
+  return '<span class="badge err">'+s+'</span>';
+}
+function progressToSLA(end){
+  const now=Date.now(), total=6*3600*1000; // 画一个相对进度条：距当前6小时窗口
+  const remain = Math.max(0, end - now);
+  const p = Math.min(100, Math.max(0, 100 - Math.floor(remain/total*100)));
+  const mm = Math.max(0, Math.floor(remain/60000));
+  return `<div class="progress"><div class="bar" style="width:${p}%"></div></div><div class="tag">剩余 ${mm} 分钟</div>`;
+}
+function openModal(title, bodyHTML, footerHTML){ $("modalTitle").textContent=title; $("modalBody").innerHTML=bodyHTML; $("modalFooter").innerHTML=footerHTML||'<button class="btn" onclick="closeModal()">关闭</button>'; $("modal").style.display="flex"; }
+function closeModal(){ $("modal").style.display="none"; }
+
+/* ---------------- KPI ---------------- */
+function renderKPI(){
+  const pendingAppointment = WORKORDERS.filter(w=> w.status === "待预约").length;
+  const inProgress = WORKORDERS.filter(w=> ["待出发", "出发中", "诊断中", "待备件", "维修中", "待验收"].includes(w.status)).length;
+  const doneToday = WORKORDERS.filter(w=> w.status==="已完成").length; // Can be enhanced with date check
+  $("kpiBar").innerHTML = [
+    {label:"待预约", value:pendingAppointment},
+    {label:"进行中", value:inProgress},
+    {label:"已完成", value:doneToday},
+  ].map(x=>`<div class="box"><div class="tag">${x.label}</div><div style="font-weight:700;font-size:20px">${x.value}</div></div>`).join("");
+}
+
+/* ---------------- 路由 ---------------- */
+const ROUTES = {
+  pending  :{title:"首页 / 待预约", kpi:renderKPI, render:renderPending},
+  scheduled:{title:"首页 / 已预约", kpi:renderKPI, render:renderScheduled},
+  me       :{title:"首页 / 我的", kpi:renderKPI, render:renderMe},
+};
+function switchRoute(route){
+  document.querySelectorAll("aside .item").forEach(it=> it.classList.toggle("active", it.dataset.route===route));
+  $("routeTitle").textContent = ROUTES[route].title;
+  document.querySelectorAll(".section").forEach(sec=> sec.classList.remove("active"));
+  $("page-"+route).classList.add("active");
+  ROUTES[route].kpi(); ROUTES[route].render();
+}
+document.querySelectorAll("aside .item").forEach(it=> it.addEventListener("click", ()=> switchRoute(it.dataset.route)));
+
+/* ---------------- 待预约 ---------------- */
+$("btnPendingSearch").onclick = renderPending;
+function renderPending(){
+  const q = $("pendingQ").value.trim();
+  let list = WORKORDERS.filter(w => w.status === "待预约");
+  if(q) list = list.filter(w=> String(w.id).includes(q) || w.customer.includes(q) || w.service.includes(q));
+
+  $("pendingBody").innerHTML=list.map(w=>`
+    <tr>
+      <td>${w.id}</td>
+      <td>${w.type}</td>
+      <td>${w.service} / ${w.customer}</td>
+      <td>${w.distance.toFixed(1)} km</td>
+      <td>${w.match}%</td>
+      <td>${badge(w.status)}</td>
+      <td>
+        <div class="ops">
+          <button class="pill" onclick="makeAppointment(${w.id})">发起预约</button>
+          <button class="pill" onclick="woReturn(${w.id})">退回服务单</button>
+          <button class="pill" onclick="viewWO(${w.id})">查看</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+/* ---------------- 已预约 ---------------- */
+$("btnScheduledSearch").onclick = renderScheduled;
+$("scheduledStatus").onchange = renderScheduled;
+function renderScheduled(){
+  const st = $("scheduledStatus").value;
+  const q = $("scheduledQ").value.trim();
+  
+  const incomplete_statuses = ["待出发", "出发中", "诊断中", "待备件", "维修中", "待验收"];
+  const complete_statuses = ["已完成", "已退回", "已取消"];
+
+  let list = [...WORKORDERS].filter(w => w.status !== "待预约");
+  
+  if (st === "incomplete") {
+    list = list.filter(w => incomplete_statuses.includes(w.status));
+  } else if (st === "complete") {
+    list = list.filter(w => complete_statuses.includes(w.status));
+  }
+
+  if(q) list = list.filter(w=> String(w.id).includes(q) || w.customer.includes(q) || w.service.includes(q));
+
+  $("scheduledBody").innerHTML=list.map(w=>`
+    <tr>
+      <td>${w.id}</td><td>${w.type}</td><td>${w.service} / ${w.customer}</td>
+      <td>${w.schedule || '---'}</td><td>${badge(w.status)}</td>
+      <td>
+        <div class="ops">
+          ${renderActionButtons(w)}
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function renderActionButtons(w) {
+  let buttons = '';
+  // The primary action button based on status
+  switch (w.status) {
+    case '待出发':
+      buttons += `<button class="pill" onclick="woDepart(${w.id})">出发</button>`;
+      break;
+    case '出发中':
+      buttons += `<button class="pill" onclick="woArrive(${w.id})">到达打卡</button>`;
+      break;
+    case '诊断中':
+      buttons += `<button class="pill" onclick="openDiagnosis(${w.id})">诊断</button>`;
+      break;
+    case '待备件':
+       buttons += `<button class="pill" onclick="openRepair(${w.id})">继续维修</button>`; // Or view parts, etc.
+      break;
+    case '维修中':
+      buttons += `<button class="pill" onclick="openRepair(${w.id})">维修</button>`;
+      break;
+    case '待验收':
+      buttons += `<button class="pill" onclick="openAcceptance(${w.id})">验收</button>`;
+      break;
+  }
+  
+  // Add "Return" button for all incomplete statuses
+  const incomplete_statuses = ["待出发", "出发中", "诊断中", "待备件", "维修中", "待验收"];
+  if (incomplete_statuses.includes(w.status)) {
+     buttons += `<button class="pill" onclick="woReturn(${w.id})">退回服务单</button>`;
+  }
+
+  // Always have a "View" button
+  buttons += `<button class="pill" onclick="viewWO(${w.id})">查看</button>`;
+  
+  return buttons;
+}
+
+
+/* ---------------- 我的 ---------------- */
+$("btnDuty").onclick = ()=>{
+  ON_DUTY = !ON_DUTY;
+  $("dutyBadge").textContent = ON_DUTY ? "上班" : "休息";
+  $("dutyBadge").className = "badge " + (ON_DUTY ? "ok" : "warn");
+  $("dutyText").textContent = "当前：" + (ON_DUTY ? "上班" : "休息");
+  toast("已切换为：" + (ON_DUTY ? "上班" : "休息"));
+};
+function renderMe(){ /* info static */ }
+
+/* ---------------- 工单操作（状态机） ---------------- */
+function viewWO(id){
+  const w=WORKORDERS.find(x=>x.id===id);
+  const parts = (w.parts||[]).map(p=>`${p.name}×${p.qty}（${p.status}）`).join("、")||"—";
+  const fees = (w.fees||[]).map(f=>`${f.name} ¥${f.amount}`).join("、")||"—";
+  openModal("工单详情", `
+    <div class="grid">
+      <div><div class="tag">工单ID</div><div>${w.id}</div></div>
+      <div><div class="tag">类型</div><div>${w.type}</div></div>
+      <div><div class="tag">预约</div><div>${w.schedule || '待预约'}</div></div>
+      <div><div class="tag">客户</div><div>${w.customer}（${w.phone}）</div></div>
+      <div style="grid-column:1/3"><div class="tag">地址</div><div>${w.address}</div></div>
+      <div style="grid-column:1/3"><div class="tag">当前状态</div><div>${w.status}</div></div>
+      <div style="grid-column:1/3"><div class="tag">诊断</div><div>${w.diagnosis? (w.diagnosis.result+" / "+(w.diagnosis.suggestion||"—")) : "—"}</div></div>
+      <div style="grid-column:1/3"><div class="tag">备件</div><div>${parts}</div></div>
+      <div style="grid-column:1/3"><div class="tag">费用</div><div>${fees}</div></div>
+      <div style="grid-column:1/3"><div class="tag">签名</div><div>${w.signature ? "已签" : "—"}</div></div>
+    </div>
+  `);
+}
+
+function makeAppointment(id) {
+    const w = WORKORDERS.find(x => x.id === id);
+    if (w.status !== "待预约") { toast("工单非“待预约”状态"); return; }
+    
+    const time = prompt("请输入预约时间", "今日 14:00-15:00");
+    if (time) {
+        w.schedule = time;
+        w.status = "待出发";
+        toast("预约成功，请准备出发");
+        refreshAll();
+    }
+}
+
+function woDepart(id){
+  const w=WORKORDERS.find(x=>x.id===id);
+  if(w.status!=="待出发"){ toast("请先预约并进入“待出发”状态"); return; }
+  w.status="出发中";
+  pushNotice("系统", `你已从当前位置出发前往 #${w.id}。`);
+  toast("已标记：出发中"); refreshAll();
+}
+function woArrive(id){
+  const w=WORKORDERS.find(x=>x.id===id);
+  if(w.status!=="出发中"){ toast("仅“出发中”可到达打卡"); return; }
+  w.status="诊断中";
+  pushNotice("客户", `师傅已到达您家（工单 #${w.id}），请注意查收。`);
+  toast("到达成功，进入诊断"); refreshAll();
+}
+function woReturn(id) {
+    const w = WORKORDERS.find(x => x.id === id);
+    const reason = prompt("请输入退回原因：", "客户刁难/无法维修");
+    if (reason) {
+        w.status = "已退回";
+        w.notes = reason;
+        toast("工单已退回");
+        refreshAll();
+    }
+}
+
+
+/* 诊断 */
+function openDiagnosis(id){
+  const w=WORKORDERS.find(x=>x.id===id);
+  if(w.status!=="诊断中"){ toast("请先到达并进入“诊断中”"); return; }
+  openModal("提交诊断报告", `
+    <div class="grid">
+      <div><div class="tag">故障现象 *</div><input id="dSym" type="text" placeholder="例如：不通电/异响"/></div>
+      <div><div class="tag">保内/保外 *</div><select id="dWarranty"><option>保内</option><option>保外</option></select></div>
+    </div>
+    <div class="grid">
+      <div><div class="tag">诊断结论 *</div><input id="dResult" type="text" placeholder="结论"/></div>
+      <div><div class="tag">建议方案 *</div><input id="dSug" type="text" placeholder="维修/更换部件"/></div>
+    </div>
+    <div class="grid">
+      <div><div class="tag">预计时长(h)</div><input id="dHours" type="number" min="0" step="0.5" value="1"/></div>
+      <div><label class="chip"><input id="dNeedParts" type="checkbox" style="margin-right:6px"> 需要备件</label></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitDiagnosis(${id})">提交</button>`);
+}
+function submitDiagnosis(id){
+  const res = (document.getElementById("dResult").value||"").trim();
+  const sug = (document.getElementById("dSug").value||"").trim();
+  const sym = (document.getElementById("dSym").value||"").trim();
+  const needParts = document.getElementById("dNeedParts").checked;
+  const w=WORKORDERS.find(x=>x.id===id);
+  if(!res||!sug||!sym){ toast("请填写必填项"); return; }
+  w.diagnosis = {symptom:sym, result:res, suggestion:sug};
+  w.needParts = needParts;
+  w.status = needParts ? "待备件" : "维修中";
+  closeModal();
+  if(needParts){
+    pushNotice("系统", `已提交备件申请（工单 #${w.id}），等待到货后预约二次上门。`);
+  }else{
+    pushNotice("系统", `诊断完成（工单 #${w.id}），可开始维修。`);
+  }
+  toast("诊断已提交"); refreshAll();
+}
+
+/* 维修 */
+function openRepair(id){
+  const w=WORKORDERS.find(x=>x.id===id);
+  if(!["维修中","诊断中", "待备件"].includes(w.status)){ toast("请先完成诊断"); return; }
+  if(w.status==="诊断中" || w.status==="待备件"){ toast("提示：已进入维修中"); w.status="维修中"; }
+  openModal("维修记录", `
+    <div class="grid">
+      <div><div class="tag">新增步骤 *</div><input id="rStep" type="text" placeholder="如：拆后盖/更换部件"/></div>
+      <div><div class="tag">工时(h)</div><input id="rHour" type="number" min="0" step="0.5" value="1"/></div>
+    </div>
+    <div style="margin-top:8px" class="tag">已用备件</div>
+    <div>${(w.parts||[]).map(p=> p.name+"×"+p.qty).join("、") || "—"}</div>
+  `, `<button class="btn" onclick="closeModal()">关闭</button><button class="btn primary" onclick="saveRepair(${id})">保存步骤</button>`);
+}
+function saveRepair(id){
+  const step=(document.getElementById("rStep").value||"").trim();
+  const hour=Number(document.getElementById("rHour").value||0);
+  if(!step){ toast("请填写步骤"); return; }
+  const w=WORKORDERS.find(x=>x.id===id);
+  w.fees = w.fees || [];
+  if(hour>0) w.fees.push({name:"工时费", amount: hour*80});
+  closeModal(); toast("已保存维修步骤");
+  w.status = "待验收";
+  pushNotice("客户", `维修完成（工单 #${w.id}），请进行验收与签字。`);
+  refreshAll();
+}
+
+/* 验收与签字 */
+let sig, sigCtx, drawing=false;
+function openAcceptance(id){
+  const w=WORKORDERS.find(x=>x.id===id);
+  if(w.status!=="待验收"){ toast("仅“待验收”可验收"); return; }
+  const feeList = (w.fees||[]).map((f,i)=>`
+    <div class="stack"><span class="tag">${f.name}</span><input type="number" data-i="${i}" class="feeInput" value="${f.amount}" min="0" step="0.01" style="width:120px"/></div>
+  `).join("") || '<div class="tag">暂无费用，完成后将以 0 元结算</div>';
+  openModal("验收与签字", `
+    <div class="grid">
+      <div>
+        <div class="tag">费用清单（可编辑）</div>
+        ${feeList}
+        <div class="stack" style="margin-top:6px">
+          <button class="btn" onclick="addFee(${id})">+ 增加费用项</button>
+        </div>
+      </div>
+      <div>
+        <div class="tag">客户签名 *</div>
+        <canvas id="sigPad" width="420" height="180"></canvas>
+        <div class="stack" style="margin-top:6px">
+          <button class="btn" onclick="sigClear()">清空</button>
+        </div>
+      </div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitAcceptance(${id})">确认完工</button>`);
+  // 初始化签名板
+  sig = document.getElementById("sigPad");
+  sigCtx = sig.getContext("2d");
+  sigCtx.lineWidth = 2; sigCtx.lineCap = "round";
+  const pos = e => {
+    const rect=sig.getBoundingClientRect();
+    const x = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+    const y = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
+    return {x,y};
+  };
+  const start = e=>{ drawing=true; const p=pos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x,p.y); };
+  const move = e=>{ if(!drawing) return; const p=pos(e); sigCtx.lineTo(p.x,p.y); sigCtx.stroke(); };
+  const end = ()=>{ drawing=false; };
+  sig.addEventListener("mousedown", start); sig.addEventListener("mousemove", move); sig.addEventListener("mouseup", end); sig.addEventListener("mouseleave", end);
+  sig.addEventListener("touchstart", start, {passive:true}); sig.addEventListener("touchmove", move, {passive:true}); sig.addEventListener("touchend", end);
+  // 费用编辑
+  document.querySelectorAll(".feeInput").forEach(inp=>{
+    inp.addEventListener("change", e=>{
+      const i=Number(e.target.dataset.i); const v=Number(e.target.value||0);
+      const w2=WORKORDERS.find(x=>x.id===id); if(!w2.fees) w2.fees=[]; w2.fees[i].amount = v;
+    });
+  });
+}
+function sigClear(){ sigCtx.clearRect(0,0,sig.width,sig.height); }
+function addFee(id){
+  const name = prompt("费用名称","材料费");
+  const amount = Number(prompt("金额","50")||0);
+  if(!name || !(amount>=0)){ toast("请输入有效费用"); return; }
+  const w=WORKORDERS.find(x=>x.id===id);
+  w.fees = w.fees || []; w.fees.push({name, amount});
+  closeModal(); openAcceptance(id);
+}
+function submitAcceptance(id){
+  const w=WORKORDERS.find(x=>x.id===id);
+  const emptySig = isCanvasBlank(sig);
+  if(emptySig){ toast("请先完成签名"); return; }
+  w.signature = sig.toDataURL();
+  w.status = "已完成";
+  closeModal();
+  pushNotice("系统", `工单 #${w.id} 已完成并签字。`);
+  toast("验收完成，已签字"); refreshAll();
+}
+function isCanvasBlank(canvas){
+  const ctx=canvas.getContext('2d'); const pixelBuffer = new Uint32Array(ctx.getImageData(0,0,canvas.width,canvas.height).data.buffer);
+  return !pixelBuffer.some(color => color !== 0);
+}
+
+/* ---------------- 工具 ---------------- */
+function callCustomer(phone){ toast("拨打："+phone+"（演示）"); }
+function pushNotice(type,text){ NOTICES.unshift({time:fmt(new Date()), text, type}); }
+function refreshAll(){
+    const currentRoute = document.querySelector(".nav .item.active").dataset.route;
+    ROUTES[currentRoute].kpi();
+    ROUTES[currentRoute].render();
+}
+
+/* ---------------- 启动 ---------------- */
+function initApp(){
+  switchRoute("pending");
+}
+window.addEventListener("DOMContentLoaded", initApp);
+</script>
+</body>
+</html>

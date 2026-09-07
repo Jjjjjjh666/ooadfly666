@@ -1,0 +1,66 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    env:
+      show-values: always
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: false
+
+server:
+  port: 8082
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+
+spring:
+  application:
+    name: service-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 使用环境变量配置，方便Docker部署
+    # Service模块连接到service_db数据库
+    url: jdbc:mysql://${MYSQL_HOST:124.70.89.47}:3306/${MYSQL_DATABASE:service_db}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123245}
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 3
+      min-idle: 3
+      max-active: 100
+      max-wait: 60000
+      stat-view-servlet:
+        login-username: admin
+        login-password: 123456
+        enabled: true
+        url-pattern: /druid/*
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 100
+      validation-query: select 1
+  jackson:
+    time-zone: GMT+8
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+oomall:
+  core:
+    page-size:
+      max: 1000
+      default: 10
+
+logging:
+  level:
+    cn.edu.xmu.service: debug
+

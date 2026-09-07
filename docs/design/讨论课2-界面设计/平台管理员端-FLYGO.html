@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FLYGO · 平台管理员端</title>
+  <style>
+    :root{
+  /* ===== 主题色（可按需调整） ===== */
+  --bg: linear-gradient(120deg,#eef2ff 0%, #f7f9fe 45%, #ecfeff 100%); /* 页面大背景不再纯白 */
+  --chrome:#0f172a;             /* 头部/侧边底色（深色） */
+  --chrome-2:#111827;           /* 侧边条 hover/active 辅色 */
+  --on-chrome:#e8edff;          /* 深色底上的文字/图标 */
+  --panel:#ffffff;              /* 内容卡片面板底色（仍以浅色为主，保证可读性） */
+  --panel-2:#f5f7ff;            /* 次级面板/表头底色 */
+  --border:#7dd3fc;             /* Tailwind sky-300 类似，亮且不深 */
+  --text:#0f172a;               /* 主文字色（非纯黑） */
+  --muted:#64748b;              /* 次要文字 */
+  --primary:#4f46e5;            /* 主色：Indigo */
+  --primary-weak:#eef2ff;       /* 主色弱化背景 */
+  --accent:#dbeafe;             /* 点缀浅蓝 */
+  --shadow: 0 10px 30px rgba(79,70,229,.10), 0 2px 10px rgba(15,23,42,.06);
+  --radius: 16px;
+}
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans",sans-serif;}
+    .app{display:grid;grid-template-columns:260px 1fr;grid-template-rows:64px 1fr;grid-template-areas:"header header" "sidebar main";height:100%;}
+    header{grid-area:header;background:var(--panel-2);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);}
+    header .brand{font-weight:700;font-size:18px;letter-spacing:0.2px;}
+    header .user{display:flex;gap:8px;align-items:center;border:1px solid var(--border);padding:8px 12px;border-radius:10px;background:#fff;}
+    aside{grid-area:sidebar;border-right:1px solid var(--border);background:#fff;overflow:auto;}
+    main{grid-area:main;overflow:auto;padding:16px 20px;}
+    .nav{padding:12px 10px;}
+    .nav h4{margin:8px 8px 10px;font-size:13px;color:var(--muted);}
+    .nav .item{padding:10px 12px;margin:6px 8px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+    .nav .item.active{background:var(--accent);font-weight:600;}
+    .crumb{margin:6px 0 8px;color:var(--muted);}
+    .section{display:none;} .section.active{display:block;}
+    .kpi{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;}
+    .kpi .box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-width:180px;}
+    .panel{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .toolbar{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px;flex-wrap:wrap;}
+    input[type="text"], select, input[type="number"], input[type="date"], input[type="datetime-local"], textarea{height:36px;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fff;min-width:140px;}
+    textarea{min-height:72px;resize:vertical;}
+    .btn{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 14px;cursor:pointer;background:#fff;}
+    .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .btn[disabled]{opacity:.5;cursor:not-allowed;}
+    .stack{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .tag{font-size:12px;color:var(--muted);}
+    table{width:100%;border-collapse:separate;border-spacing:0;}
+    thead th{background:var(--panel-2);text-align:left;padding:12px;border-bottom:1px solid var(--border);font-weight:600;}
+    tbody td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    .footer{display:flex;align-items:center;justify-content:space-between;padding:10px;color:var(--muted);}
+    .badge{display:inline-flex;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:#374151;font-size:12px;}
+    .badge.ok{border-color:#dcfce7;color:#166534;background:#f0fdf4;}
+    .badge.warn{border-color:#fef3c7;color:#92400e;background:#fffbeb;}
+    .badge.err{border-color:#fee2e2;color:#991b1b;background:#fef2f2;}
+    .ops{display:flex;gap:6px;flex-wrap:wrap;}
+    .pill{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer;font-size:12px;}
+    .pill:hover{border-color:var(--primary);}
+    .note{font-size:12px;color:var(--muted);}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:30;}
+    .card{width:min(980px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;border:1px solid var(--border);}
+    .card header{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:700;}
+    .card .content{padding:14px 16px;}
+    .card footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+    .toast{position:fixed;right:16px;bottom:16px;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none;z-index:100;}
+    .divider{height:1px;background:var(--border);margin:10px 0;}
+    .subtle{color:var(--muted);font-size:12px;}
+  
+/* ===== 统一头部/侧边深色底、卡片边框与阴影 ===== */
+html,body{background:var(--bg);background-attachment:fixed;}
+header{background:linear-gradient(90deg, var(--chrome) 0%, #182135 60%, #1e293b 100%);border-bottom:1px solid rgba(232,237,255,.18)}
+header .brand{color:var(--on-chrome);font-weight:800}
+header .user{border-color:rgba(232,237,255,.28);background:rgba(255,255,255,.06);color:var(--on-chrome)}
+aside{background:linear-gradient(180deg, var(--chrome) 0%, #111827 100%);color:var(--on-chrome)}
+.nav h4{color:#94a3b8}
+.nav .item{color:var(--on-chrome)}
+.nav .item.active{background:rgba(255,255,255,.08);border:1px solid rgba(232,237,255,.18)}
+.kpi .box,.panel,.toolbar{border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);background:var(--panel)}
+thead th{background:var(--panel-2);color:#334155}
+input[type="text"], select, input[type="number"], input[type="date"], input[type="datetime-local"], textarea{
+  border:1px solid var(--border);background:#fff;border-radius:12px;transition:all .15s
+}
+input:focus, select:focus, textarea:focus{outline:none;border-color:#aab9ff; box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+.btn{height:40px;border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;background:#fff;transition:all .15s; font-weight:600;color:#334155;}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+.btn.primary:hover{filter:brightness(.96); transform: translateY(-1px);}
+.pill:hover{border-color:#8fa2ff;background:#f0f4ff;}
+.overlay{background:rgba(15,23,42,.45)}
+.card{background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow)}
+.card header,.card footer{background:var(--panel-2)}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">FLYGO · 平台管理员端</div>
+    <div class="user">系统管理员</div>
+  </header>
+  <aside>
+    <div class="nav">
+      <h4>导航</h4>
+      <div class="item active" data-route="merchants">商户管理</div>
+      <div class="item" data-route="providers">服务商管理</div>
+      <div class="item" data-route="products">商品审核</div>
+      <div class="item" data-route="categories">商品分类</div>
+      <div class="item" data-route="productSearch">查询商品</div>
+      <div class="item" data-route="activities">活动审核</div>
+      <div class="item" data-route="customers">顾客管理</div>
+    </div>
+  </aside>
+  <main>
+    <div id="routeTitle" class="crumb">首页 / 商户管理</div>
+    <div class="kpi" id="kpiBar"></div>
+
+    <!-- 商户管理 -->
+    <section id="page-merchants" class="section active">
+      <div class="toolbar">
+        <div class="stack">
+          <button class="btn primary" id="tabMOpen">开户审核</button>
+          <button class="btn" id="tabMChange">变更审核</button>
+          <button class="btn" id="tabMState">暂停/恢复</button>
+        </div>
+      </div>
+      <!-- 开户审核 -->
+      <div id="m-open" class="panel" style="margin-top:12px;display:block;">
+        <div class="toolbar">
+          <input id="mOpenQ" type="text" placeholder="商户名 / 联系人 / 联系电话" />
+          <button class="btn" onclick="renderMerchantOpen()">搜索</button>
+          <div style="flex:1"></div>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:120px">申请ID</th>
+            <th style="width:200px">商户名称</th>
+            <th style="width:140px">申请日期</th>
+            <th style="width:140px">法人代表</th>
+            <th style="width:140px">注册地区</th>
+            <th style="width:160px">主账号名称</th>
+            <th style="width:220px">操作</th>
+          </tr></thead>
+          <tbody id="mOpenBody"></tbody>
+        </table>
+      </div>
+      <!-- 变更审核 -->
+      <div id="m-change" class="panel" style="margin-top:12px;display:none;">
+        <div class="toolbar">
+          <input id="mChangeQ" type="text" placeholder="商户名 / 联系人 / 电话" />
+          <button class="btn" onclick="renderMerchantChange()">搜索</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:120px">变更ID</th>
+            <th style="width:200px">商户名称</th>
+            <th style="width:140px">申请日期</th>
+            <th style="width:140px">法人代表</th>
+            <th style="width:140px">注册地区</th>
+            <th style="width:160px">主账号名称</th>
+            <th>变更项（旧 → 新）</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="mChangeBody"></tbody>
+        </table>
+      </div>
+      <!-- 暂停/恢复 -->
+      <div id="m-state" class="panel" style="margin-top:12px;display:none;">
+        <div class="toolbar">
+          <input id="mStateQ" type="text" placeholder="商户名 / 联系人 / 电话 / 地址" />
+          <select id="mStateStatus"><option value="">全部状态</option><option>正常</option><option>暂停</option></select>
+          <button class="btn" onclick="renderMerchantState()">筛选</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:120px">商户ID</th>
+            <th style="width:220px">商户名</th>
+            <th style="width:140px">联系人</th>
+            <th style="width:160px">联系电话</th>
+            <th>详细地址</th>
+            <th style="width:120px">状态</th>
+            <th style="width:240px">操作</th>
+          </tr></thead>
+          <tbody id="mStateBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 服务商管理 -->
+    <section id="page-providers" class="section">
+      <div class="toolbar">
+        <div class="stack">
+          <button class="btn primary" id="tabPOpen">开户审核</button>
+          <button class="btn" id="tabPChange">变更审核</button>
+          <button class="btn" id="tabPState">暂停/恢复</button>
+        </div>
+      </div>
+      <div id="pr-open" class="panel" style="margin-top:12px;display:block;">
+        <div class="toolbar">
+          <input id="pOpenQ" type="text" placeholder="服务商 / 联系人 / 电话 / 区域" />
+          <select id="pOpenCat"><option value="">全部品类</option></select>
+          <button class="btn" onclick="renderProviderOpen()">搜索</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:120px">申请ID</th>
+            <th style="width:200px">服务商</th>
+            <th style="width:140px">联系人</th>
+            <th style="width:150px">联系电话</th>
+            <th style="width:140px">区域</th>
+            <th style="width:160px">服务品类</th>
+            <th style="width:180px">操作</th>
+          </tr></thead>
+          <tbody id="pOpenBody"></tbody>
+        </table>
+      </div>
+      <!-- 新增：服务商变更审核 -->
+      <div id="pr-change" class="panel" style="margin-top:12px;display:none;">
+        <div class="toolbar">
+          <input id="pChangeQ" type="text" placeholder="服务商 / 联系人 / 电话 / 区域" />
+          <button class="btn" onclick="renderProviderChange()">搜索</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:120px">变更ID</th>
+            <th style="width:220px">服务商</th>
+            <th style="width:140px">申请日期</th>
+            <th style="width:140px">联系人</th>
+            <th style="width:140px">区域</th>
+            <th>变更项（旧 → 新）</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="pChangeBody"></tbody>
+        </table>
+      </div>
+      <div id="pr-state" class="panel" style="margin-top:12px;display:none;">
+        <div class="toolbar">
+          <input id="pStateQ" type="text" placeholder="服务商 / 联系人 / 电话 / 区域" />
+          <select id="pStateStatus"><option value="">全部状态</option><option>正常</option><option>暂停</option></select>
+          <button class="btn" onclick="renderProviderState()">筛选</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:120px">服务商ID</th>
+            <th style="width:220px">服务商</th>
+            <th style="width:140px">联系人</th>
+            <th style="width:150px">联系电话</th>
+            <th style="width:140px">区域</th>
+            <th style="width:120px">状态</th>
+            <th style="width:220px">操作</th>
+          </tr></thead>
+          <tbody id="pStateBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 商品审核 -->
+    <section id="page-products" class="section">
+      <div class="toolbar">
+        <div class="stack">
+          <button class="btn primary" id="tabProdNew">新增审核</button>
+          <button class="btn" id="tabProdChange">变更审核</button>
+        </div>
+        <div style="flex:1"></div>
+        <input id="prodQ" type="text" placeholder="商品/商户/条码" />
+        <select id="prodCat"></select>
+        <button class="btn" onclick="renderProducts()">搜索</button>
+      </div>
+      <div id="prod-new" class="panel" style="margin-top:12px;display:block;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">申请ID</th>
+            <th style="width:240px">商品（商户）</th>
+            <th style="width:100px">分类</th>
+            <th style="width:100px">原价</th>
+            <th style="width:120px">销售价格</th>
+            <th style="width:120px">分账比例</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="prodNewBody"></tbody>
+        </table>
+      </div>
+      <div id="prod-change" class="panel" style="margin-top:12px;display:none;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">变更ID</th>
+            <th style="width:240px">商品（商户）</th>
+            <th>变更项（旧 → 新）</th>
+            <th style="width:200px">操作</th>
+          </tr></thead>
+          <tbody id="prodChangeBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 商品分类（含全局重名校验 & 二级分类） -->
+    <section id="page-categories" class="section">
+      <div class="toolbar">
+        <button class="btn primary" onclick="openAddCat()">+ 新增分类</button>
+        <div style="flex:1"></div>
+        <span class="tag">规则：一级与二级分类名称全局不可重复（新增/修改均校验）；每个分类可设置分账比例</span>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:160px">分类ID</th>
+            <th style="width:240px">名称</th>
+            <th style="width:200px">父级</th>
+            <th style="width:200px">分账比例</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="catBody"></tbody>
+        </table>
+        <div class="footer"><span class="tag">小贴士：删除父级分类前请先处理其二级分类；删除时可选择把相关商品移至“未分类”。</span></div>
+      </div>
+    </section>
+
+    <!-- 查询商品（支持按ID检索） -->
+    <section id="page-productSearch" class="section">
+      <div class="toolbar">
+        <input id="searchQ" type="text" placeholder="商品名 / ID / 商户" />
+        <select id="searchCat"><option value="">全部分类</option><option>手机配件</option><option>数码家电</option><option>家居日用</option></select>
+        <select id="searchStatus"><option value="">全部状态</option><option>待审核</option><option>已核准</option><option>已拒绝</option></select>
+        <button class="btn" onclick="renderProductSearch()">搜索</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:140px">商品ID</th>
+            <th style="width:240px">商品（商户）</th>
+            <th style="width:120px">分类</th>
+            <th style="width:100px">原价</th>
+            <th style="width:120px">销售价格</th>
+            <th style="width:120px">状态</th>
+          </tr></thead>
+          <tbody id="searchBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 活动审核（支持按ID & 起止时间 & 商品名 & 活动状态检索） -->
+    <section id="page-activities" class="section">
+      <div class="toolbar">
+        <input id="actQ" type="text" placeholder="活动名称 / 商户 / ID" />
+        <input id="actProdQ" type="text" placeholder="活动商品名称" />
+        <select id="actStage">
+          <option value="">全部状态</option>
+          <option value="未开始">未开始</option>
+          <option value="已上线">已上线</option>
+          <option value="已结束">已结束</option>
+          <option value="待审核">待审核</option>
+          <option value="已拒绝">已拒绝</option>
+        </select>
+        <span class="tag">时间范围：</span>
+        <input id="actStartFrom" type="date" />
+        <span>—</span>
+        <input id="actEndTo" type="date" />
+        <button class="btn" onclick="renderActivities()">搜索</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:140px">活动ID</th>
+            <th style="width:200px">活动名称</th>
+            <th style="width:200px">活动商品</th>
+            <th style="width:160px">商户</th>
+            <th style="width:160px">起止日期</th>
+            <th style="width:140px">打折方式</th>
+            <th style="width:120px">活动状态</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="actBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 顾客管理（支持按ID检索） -->
+    <section id="page-customers" class="section">
+      <div class="toolbar">
+        <input id="custQ" type="text" placeholder="姓名 / 手机 / 邮箱 / ID" />
+        <select id="custStatus"><option value="">全部状态</option><option>正常</option><option>封禁</option><option>注销</option></select>
+        <button class="btn" onclick="renderCustomers()">搜索</button>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <table>
+          <thead><tr>
+            <th style="width:120px">顾客ID</th>
+            <th style="width:180px">姓名</th>
+            <th style="width:180px">手机</th>
+            <th style="width:220px">邮箱</th>
+            <th style="width:120px">状态</th>
+            <th style="width:260px">操作</th>
+          </tr></thead>
+          <tbody id="custBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- 通用模态框 -->
+<div class="overlay" id="modal">
+  <div class="card">
+    <header id="modalTitle">标题</header>
+    <div class="content" id="modalBody"></div>
+    <footer id="modalFooter"><button class="btn" onclick="closeModal()">关闭</button></footer>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ------------------ 示例数据（扩展字段） ------------------ */
+// 商户开户申请
+let MERCHANT_APPLY = [
+  {id:1, name:"极客数码", contact:"李明", phone:"13000000001", address:"上海市浦东新区张江路 88 号", attachments:["营业执照.jpg"], status:"待审核",
+   applyDate:"2025-10-20", legalPerson:"李强", regRegion:"上海 · 浦东新区", mainAccountName:"geek_admin",
+   licenseNo:"91310115MA2XXXXXX", regAddress:"上海市浦东新区张江高科××路88号", businessScope:"电子产品零售、售后服务", licenseFile:"营业执照.jpg"},
+  {id:2, name:"乐活百货", contact:"王芳", phone:"13100000002", address:"杭州市西湖区文三路 66 号", attachments:["营业执照.jpg"], status:"待审核",
+   applyDate:"2025-10-22", legalPerson:"王伟", regRegion:"浙江 · 杭州", mainAccountName:"lelife_owner",
+   licenseNo:"91330106MA2YYYYYY", regAddress:"杭州市西湖区××大厦 66 号", businessScope:"百货零售、配送服务", licenseFile:"营业执照.jpg"}
+];
+// 商户变更申请（扩展展示字段）
+let MERCHANT_CHANGE = [
+  {id:11, merchantId:101, name:"极客数码",
+   applyDate:"2025-10-23", legalPerson:"李强", regRegion:"上海 · 浦东新区", mainAccountName:"geek_admin",
+   changes:[{field:"联系电话",old:"13000000001", now:"13000000009"},{field:"详细地址",old:"张江路 88 号", now:"张江路 188 号"}], status:"待审核"},
+];
+// 商户库
+let MERCHANTS = [
+  {id:101, name:"极客数码", contact:"李明", phone:"13000000001", address:"上海市浦东新区张江路 88 号", status:"正常"},
+  {id:102, name:"乐活百货", contact:"王芳", phone:"13100000002", address:"杭州市西湖区文三路 66 号", status:"暂停"},
+  {id:103, name:"华电优选", contact:"赵蕾", phone:"13200000003", address:"深圳市南山区科技园 1 号", status:"正常"},
+];
+// 商户变更历史（演示）
+let MERCHANT_CHANGE_LOGS = {
+  101: [
+    {date:"2025-09-01", items:["联系电话 13000000001 → 13000000008"]},
+    {date:"2025-09-20", items:["详细地址 张江路58号 → 张江路88号","联系人 李敏 → 李明"]},
+    {date:"2025-10-23", items:["联系电话 13000000008 → 13000000009","详细地址 张江路88号 → 张江路188号"]},
+  ]
+};
+
+// 服务商
+let PROVIDER_APPLY = [
+  {id:51, name:"优修科技", contact:"周工", phone:"13300000001", region:"上海", categories:["维修","仓配"], license:"营业执照.pdf", status:"待审核"},
+  {id:52, name:"XX 物流服务商", contact:"陈敏", phone:"13300000002", region:"杭州", categories:["仓配"], license:"许可证.jpg", status:"待审核"},
+];
+let PROVIDERS = [
+  {id:601, name:"优修科技", contact:"周工", phone:"13300000001", region:"上海", status:"正常"},
+  {id:602, name:"XX 物流服务商", contact:"陈敏", phone:"13300000002", region:"杭州", status:"正常"},
+];
+// ★ 新增：服务商变更申请 & 历史
+let PROVIDER_CHANGE = [
+  {id:71, providerId:601, name:"优修科技", applyDate:"2025-10-24", contact:"周工", region:"上海",
+   changes:[{field:"联系电话", old:"13300000001", now:"13300000009"}, {field:"区域", old:"上海", now:"上海 · 浦东"}], status:"待审核"},
+  {id:72, providerId:602, name:"XX 物流服务商", applyDate:"2025-10-25", contact:"陈敏", region:"杭州",
+   changes:[{field:"联系电话", old:"13300000002", now:"13300000006"}], status:"待审核"},
+];
+let PROVIDER_CHANGE_LOGS = {
+  601: [
+    {date:"2025-09-05", items:["联系电话 13300000001 → 13300000008"]},
+    {date:"2025-10-24", items:["联系电话 13300000008 → 13300000009","区域 上海 → 上海 · 浦东"]},
+  ],
+  602: [
+    {date:"2025-10-01", items:["联系人 陈杰 → 陈敏"]},
+  ],
+};
+
+// 分类（含二级）
+let CATEGORIES = [
+  {id:1, name:"数码家电", parentId:null, share:"商户70% / 平台30%"},
+  {id:2, name:"手机配件", parentId:1, share:"商户70% / 平台30%"},
+  {id:3, name:"家居日用", parentId:null, share:"商户80% / 平台20%"},
+];
+
+// 商品（审核与查询）
+let PRODUCT_APPLY = [
+  {id:201, type:"新增", name:"蓝牙耳机 Pro", merchantId:101, merchantName:"极客数码", categoryId:2, categoryName:"手机配件", barcode:"692000000001", unit:"件", origin:"中国", listPrice:399, salePrice:369, share:"商户70% / 平台30%", status:"待审核"},
+  {id:202, type:"新增", name:"无线音箱 Mini", merchantId:101, merchantName:"极客数码", categoryId:1, categoryName:"数码家电", barcode:"692000000002", unit:"件", origin:"中国", listPrice:259, salePrice:229, share:"商户70% / 平台30%", status:"待审核"},
+];
+let PRODUCT_CHANGE = [
+  {id:211, type:"变更", name:"蓝牙耳机 Pro", merchantId:101, merchantName:"极客数码", categoryId:2, categoryName:"手机配件", changes:[
+    {field:"销售价格", old:"369", now:"349"},
+    {field:"分账比例", old:"商户70% / 平台30%", now:"商户72% / 平台28%"},
+  ], status:"待审核"}
+];
+let PRODUCT_ALL = [
+  {id:301, name:"蓝牙耳机 Pro", merchantId:101, merchantName:"极客数码", categoryId:2, categoryName:"手机配件", barcode:"692000000001", listPrice:399, salePrice:369, share:"商户70% / 平台30%", status:"已核准"},
+  {id:302, name:"无线音箱 Mini", merchantId:101, merchantName:"极客数码", categoryId:1, categoryName:"数码家电", barcode:"692000000002", listPrice:259, salePrice:229, share:"商户70% / 平台30%", status:"待审核"},
+  {id:303, name:"多功能收纳盒", merchantId:103, merchantName:"华电优选", categoryId:3, categoryName:"家居日用", barcode:"692000000003", listPrice:59, salePrice:49, share:"商户80% / 平台20%", status:"已拒绝"},
+];
+
+// 活动审核（扩展：活动商品 + 审核历史）
+let ACTIVITIES = [
+  {id:401, name:"金秋折扣", productName:"蓝牙耳机 Pro", merchantId:101, merchantName:"极客数码", start:"2025-10-10", end:"2025-10-25", discount:"9折", status:"待审核", rejectReason:null},
+  {id:402, name:"双11预售", productName:"无线音箱 Mini", merchantId:103, merchantName:"华电优选", start:"2025-11-01", end:"2025-11-12", discount:"满300减30", status:"待审核", rejectReason:null},
+];
+let ACTIVITY_AUDIT_LOGS = {
+  401: [
+    {time:"2025-10-08 09:30", by:"张管理员", action:"提交审核", note:"—", result:"待审核"},
+    {time:"2025-10-09 11:02", by:"李审核", action:"初审备注", note:"请补充活动规则截图", result:"待补充"},
+  ],
+  402: [
+    {time:"2025-10-20 14:15", by:"王审核", action:"提交审核", note:"—", result:"待审核"}
+  ]
+};
+
+// 顾客
+let CUSTOMERS = [
+  {id:8011, name:"张三", phone:"13800000001", email:"zhangsan@example.com", status:"正常"},
+  {id:8012, name:"李四", phone:"13800000002", email:"lisi@example.com", status:"封禁"},
+  {id:8013, name:"王五", phone:"13800000003", email:"wangwu@example.com", status:"正常"},
+];
+
+function $(id){ return document.getElementById(id); }
+function toast(msg, ms=1800){ const t=$("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none", ms); }
+function openModal(title, bodyHTML, footerHTML){ $("modalTitle").textContent=title; $("modalBody").innerHTML=bodyHTML; $("modalFooter").innerHTML=footerHTML||'<button class="btn" onclick="closeModal()">关闭</button>'; $("modal").style.display="flex"; }
+function closeModal(){ $("modal").style.display="none"; }
+function badge(s){ if(["正常","已核准","通过","已上线"].includes(s)) return '<span class="badge ok">'+s+'</span>'; if(["待审核","暂停","未开始"].includes(s)) return '<span class="badge warn">'+s+'</span>'; return '<span class="badge err">'+s+'</span>'; }
+function formatPrice(p){ return "¥" + Number(p).toFixed(2); }
+function todayStr(){ const d=new Date(); const pad=n=>String(n).padStart(2,'0'); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function calcActStage(a){
+  // 审核未通过/未审核直接显示其状态
+  if(a.status==="待审核"||a.status==="已拒绝") return a.status;
+  const now=todayStr();
+  if(now < a.start) return "未开始";
+  if(now > a.end) return "已结束";
+  return "已上线";
+}
+
+/* ------------------ 路由与KPI ------------------ */
+const ROUTES = {
+  merchants:{title:"首页 / 商户管理", kpi: renderKpi, render: ()=>{renderMerchantOpen(); renderMerchantChange(); renderMerchantState();}},
+  providers:{title:"首页 / 服务商管理", kpi: renderKpi, render: ()=>{renderProviderOpen(); renderProviderChange(); renderProviderState();}},
+  products:{title:"首页 / 商品审核", kpi: renderKpi, render: renderProducts},
+  categories:{title:"首页 / 商品分类", kpi: renderKpi, render: renderCategories},
+  productSearch:{title:"首页 / 查询商品", kpi: renderKpi, render: renderProductSearch},
+  activities:{title:"首页 / 活动审核", kpi: renderKpi, render: renderActivities},
+  customers:{title:"首页 / 顾客管理", kpi: renderKpi, render: renderCustomers },
+};
+document.querySelectorAll("aside .item").forEach(it=> it.addEventListener("click", ()=> switchRoute(it.dataset.route)));
+function switchRoute(route){
+  document.querySelectorAll("aside .item").forEach(it=> it.classList.toggle("active", it.dataset.route===route));
+  $("routeTitle").textContent = ROUTES[route].title;
+  document.querySelectorAll(".section").forEach(sec=> sec.classList.remove("active"));
+  $("page-"+route).classList.add("active");
+  ROUTES[route].kpi(); ROUTES[route].render();
+}
+function renderKpi(){
+  const mOpen=MERCHANT_APPLY.filter(x=>x.status==="待审核").length;
+  const mChange=MERCHANT_CHANGE.filter(x=>x.status==="待审核").length;
+  const pOpen=PROVIDER_APPLY.filter(x=>x.status==="待审核").length;
+  const pNew=PRODUCT_APPLY.filter(x=>x.type==="新增" && x.status==="待审核").length;
+  const pChange=PRODUCT_CHANGE.filter(x=>x.status==="待审核").length;
+  const acts=ACTIVITIES.filter(a=>a.status==="待审核").length;
+  $("kpiBar").innerHTML=[
+    {label:"商户开户审核",value:mOpen},
+    {label:"商户变更审核",value:mChange},
+    {label:"服务商开户审核",value:pOpen},
+    {label:"商品新增审核",value:pNew},
+    {label:"商品变更审核",value:pChange},
+    {label:"活动审核",value:acts},
+  ].map(x=>`<div class="box"><div class="tag">${x.label}</div><div style="font-weight:700;font-size:20px">${x.value}</div></div>`).join("");
+}
+
+/* ------------------ 商户管理 ------------------ */
+// Tab 切换
+$("tabMOpen").onclick=()=>{ setMTab("open"); };
+$("tabMChange").onclick=()=>{ setMTab("change"); };
+$("tabMState").onclick=()=>{ setMTab("state"); };
+function setMTab(t){
+  $("tabMOpen").classList.toggle("primary", t==="open");
+  $("tabMChange").classList.toggle("primary", t==="change");
+  $("tabMState").classList.toggle("primary", t==="state");
+  $("m-open").style.display = (t==="open")?"block":"none";
+  $("m-change").style.display = (t==="change")?"block":"none";
+  $("m-state").style.display = (t==="state")?"block":"none";
+}
+// 开户审核（列表 + 详情扩展）
+function renderMerchantOpen(){
+  const q=$("mOpenQ").value?.trim()||"";
+  let list=[...MERCHANT_APPLY];
+  if(q){ const qq=q.toLowerCase(); list=list.filter(x=> x.name.toLowerCase().includes(qq) || x.contact.includes(q) || x.phone.includes(q)); }
+  $("mOpenBody").innerHTML = list.map(x=>`
+    <tr>
+      <td>${x.id}</td>
+      <td>${x.name}</td>
+      <td>${x.applyDate||"—"}</td>
+      <td>${x.legalPerson||"—"}</td>
+      <td>${x.regRegion||"—"}</td>
+      <td>${x.mainAccountName||"—"}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="mOpenView(${x.id})">查看</button>
+        <button class="pill" onclick="mOpenApprove(${x.id})">通过</button>
+        <button class="pill" onclick="mOpenReject(${x.id})">拒绝</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+function mOpenView(id){
+  const x=MERCHANT_APPLY.find(m=>m.id===id);
+  openModal("商户开户申请详情", `
+    <div class="grid">
+      <div><div class="tag">开户商户名称</div><div>${x.name}</div></div>
+      <div><div class="tag">法人代表</div><div>${x.legalPerson||"—"}</div></div>
+      <div><div class="tag">主账号名称</div><div>${x.mainAccountName||"—"}</div></div>
+      <div><div class="tag">营业执照编号</div><div>${x.licenseNo||"—"}</div></div>
+      <div style="grid-column:1/3"><div class="tag">注册地址</div><div>${x.regAddress||"—"}</div></div>
+      <div style="grid-column:1/3"><div class="tag">经营范围</div><div>${x.businessScope||"—"}</div></div>
+      <div style="grid-column:1/3"><div class="tag">营业执照</div><div>${x.licenseFile|| (x.attachments||[]).join("，") || "—"}</div></div>
+    </div>
+  `);
+}
+function mOpenApprove(id){
+  const x=MERCHANT_APPLY.find(m=>m.id===id);
+  const newId = Math.max(100, ...MERCHANTS.map(m=>m.id)) + 1;
+  MERCHANTS.push({id:newId, name:x.name, contact:x.contact, phone:x.phone, address:x.address, status:"正常"});
+  MERCHANT_APPLY = MERCHANT_APPLY.filter(m=>m.id!==id);
+  toast("已通过开户申请");
+  renderMerchantOpen();
+  renderMerchantState();
+  renderKpi();
+}
+function mOpenReject(id){
+  const x=MERCHANT_APPLY.find(m=>m.id===id);
+  openModal("拒绝开户申请", `
+    <div class="tag">请填写拒绝理由：</div>
+    <textarea id="rejectReason" placeholder="例如：资料不完整/资质不符合"></textarea>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="mOpenDoReject(${id})">提交</button>`);
+}
+function mOpenDoReject(id){
+  const reason = (document.getElementById("rejectReason").value||"").trim();
+  MERCHANT_APPLY = MERCHANT_APPLY.filter(m=>m.id!==id);
+  closeModal(); toast("已拒绝开户申请，理由："+(reason||"未填写"));
+  renderMerchantOpen(); renderKpi();
+}
+// 变更审核（列表增加企业信息 + 历史按钮）
+function renderMerchantChange(){
+  const q=$("mChangeQ").value?.trim()||"";
+  let list=[...MERCHANT_CHANGE];
+  if(q){ list=list.filter(x=> x.name.includes(q) || (MERCHANTS.find(m=>m.id===x.merchantId)?.phone||"").includes(q)); }
+  $("mChangeBody").innerHTML = list.map(x=>`
+    <tr>
+      <td>${x.id}</td>
+      <td>${x.name}</td>
+      <td>${x.applyDate||"—"}</td>
+      <td>${x.legalPerson||"—"}</td>
+      <td>${x.regRegion||"—"}</td>
+      <td>${x.mainAccountName||"—"}</td>
+      <td>${x.changes.map(c=> `<div><span class="subtle">${c.field}</span>：${c.old} → <b>${c.now}</b></div>`).join("")}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="mChangeApprove(${x.id})">通过</button>
+        <button class="pill" onclick="mChangeReject(${x.id})">拒绝</button>
+        <button class="pill" onclick="mChangeHistory(${x.merchantId})">变更历史</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+function mChangeHistory(merchantId){
+  const logs = MERCHANT_CHANGE_LOGS[merchantId]||[];
+  const body = logs.length? logs.map(l=>`
+    <div style="padding:6px 0;">
+      <div class="tag">${l.date}</div>
+      ${l.items.map(it=> `<div>• ${it}</div>`).join("")}
+    </div>
+  `).join("") : "<div class='tag'>暂无历史记录</div>";
+  openModal("商户变更历史", body);
+}
+function mChangeApprove(id){
+  const c=MERCHANT_CHANGE.find(x=>x.id===id);
+  const m=MERCHANTS.find(mm=>mm.id===c.merchantId);
+  c.changes.forEach(ch=>{ if(ch.field==="联系电话") m.phone=ch.now; if(ch.field==="详细地址") m.address=ch.now; });
+  MERCHANT_CHANGE = MERCHANT_CHANGE.filter(x=>x.id!==id);
+  toast("已通过商户变更"); renderMerchantChange(); renderMerchantState(); renderKpi();
+}
+function mChangeReject(id){
+  openModal("拒绝商户变更", `
+    <div class="tag">请填写拒绝理由：</div>
+    <textarea id="rejectReason2" placeholder="例如：变更信息不合理"></textarea>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="mChangeDoReject(${id})">提交</button>`);
+}
+function mChangeDoReject(id){
+  const reason = (document.getElementById("rejectReason2").value||"").trim();
+  MERCHANT_CHANGE = MERCHANT_CHANGE.filter(m=>m.id!==id);
+  closeModal(); toast("已拒绝商户变更，理由："+(reason||"未填写")); renderMerchantChange(); renderKpi();
+}
+// 暂停/恢复
+function renderMerchantState(){
+  const q=$("mStateQ").value?.trim()||""; const st=$("mStateStatus").value;
+  let list=[...MERCHANTS];
+  if(q){ const qq=q.toLowerCase(); list=list.filter(x=> x.name.toLowerCase().includes(qq) || x.contact.includes(q) || x.phone.includes(q) || x.address.includes(q)); }
+  if(st) list=list.filter(x=> x.status===st);
+  $("mStateBody").innerHTML = list.map(x=>`
+    <tr>
+      <td>${x.id}</td>
+      <td>${x.name}</td>
+      <td>${x.contact}</td>
+      <td>${x.phone}</td>
+      <td>${x.address}</td>
+      <td>${badge(x.status)}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="mStateView(${x.id})">查看</button>
+        ${x.status==="正常"
+          ? `<button class="pill" onclick="mPause(${x.id})">暂停</button>`
+          : `<button class="pill" onclick="mResume(${x.id})">恢复</button>`}
+      </div></td>
+    </tr>
+  `).join("");
+}
+function mStateView(id){
+  const m=MERCHANTS.find(x=>x.id===id);
+  openModal("商户详情", `
+    <div class="grid">
+      <div><div class="tag">商户ID</div><div>${m.id}</div></div>
+      <div><div class="tag">商户名</div><div>${m.name}</div></div>
+      <div><div class="tag">联系人</div><div>${m.contact}</div></div>
+      <div><div class="tag">联系电话</div><div>${m.phone}</div></div>
+      <div style="grid-column:1/3"><div class="tag">详细地址</div><div>${m.address}</div></div>
+      <div><div class="tag">状态</div><div>${m.status}</div></div>
+    </div>
+  `);
+}
+function mPause(id){ const m=MERCHANTS.find(x=>x.id===id); m.status="暂停"; toast("已暂停商户："+m.name); renderMerchantState(); renderKpi(); }
+function mResume(id){ const m=MERCHANTS.find(x=>x.id===id); m.status="正常"; toast("已恢复商户："+m.name); renderMerchantState(); renderKpi(); }
+
+/* ------------------ 服务商管理 ------------------ */
+$("tabPOpen").onclick=()=> setPTab("open");
+$("tabPChange").onclick=()=> setPTab("change");
+$("tabPState").onclick=()=> setPTab("state");
+function setPTab(t){
+  $("tabPOpen").classList.toggle("primary", t==="open");
+  $("tabPChange").classList.toggle("primary", t==="change");
+  $("tabPState").classList.toggle("primary", t==="state");
+  $("pr-open").style.display = (t==="open")?"block":"none";
+  $("pr-change").style.display = (t==="change")?"block":"none";
+  $("pr-state").style.display = (t==="state")?"block":"none";
+}
+// 下拉选项：服务品类
+function buildProviderCategoryOptions(){
+  const allCats = new Set();
+  [...PROVIDER_APPLY, ...PROVIDERS].forEach(p => (p.categories||[]).forEach(c => allCats.add(c)));
+  $("pOpenCat").innerHTML = '<option value="">全部品类</option>' + Array.from(allCats).map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+function renderProviderOpen(){
+  const q=$("pOpenQ").value?.trim()||"";
+  const cat=($("pOpenCat").value||"").trim();
+  let list=[...PROVIDER_APPLY];
+  if(q){
+    const qq=q.toLowerCase();
+    list=list.filter(x=> x.name.toLowerCase().includes(qq) || x.contact.includes(q) || x.phone.includes(q) || (x.region||"").includes(q));
+  }
+  if(cat){ list=list.filter(x => (x.categories||[]).includes(cat)); }
+  $("pOpenBody").innerHTML = list.map(x=>`
+    <tr>
+      <td>${x.id}</td>
+      <td>${x.name}</td>
+      <td>${x.contact}</td>
+      <td>${x.phone}</td>
+      <td>${x.region||"—"}</td>
+      <td>${(x.categories||[]).join("、")||"—"}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="pOpenView(${x.id})">查看</button>
+        <button class="pill" onclick="pOpenApprove(${x.id})">通过</button>
+        <button class="pill" onclick="pOpenReject(${x.id})">拒绝</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+function pOpenView(id){
+  const x=PROVIDER_APPLY.find(p=>p.id===id);
+  openModal("服务商开户申请详情", `
+    <div class="grid">
+      <div><div class="tag">服务商</div><div>${x.name}</div></div>
+      <div><div class="tag">联系人</div><div>${x.contact}</div></div>
+      <div><div class="tag">联系电话</div><div>${x.phone}</div></div>
+      <div><div class="tag">区域</div><div>${x.region||"—"}</div></div>
+      <div style="grid-column:1/2"><div class="tag">服务品类</div><div>${(x.categories||[]).join("、")||"—"}</div></div>
+      <div style="grid-column:1/2"><div class="tag">资质附件</div><div>${x.license||"—"}</div></div>
+    </div>
+  `);
+}
+function pOpenApprove(id){
+  const x=PROVIDER_APPLY.find(p=>p.id===id);
+  const newId = Math.max(600, ...PROVIDERS.map(p=>p.id)) + 1;
+  PROVIDERS.push({id:newId, name:x.name, contact:x.contact, phone:x.phone, region:x.region, categories:x.categories, status:"正常"});
+  PROVIDER_APPLY = PROVIDER_APPLY.filter(p=>p.id!==id);
+  toast("已通过服务商开户申请"); renderProviderOpen(); renderProviderState(); renderKpi();
+}
+function pOpenReject(id){
+  openModal("拒绝服务商开户", `
+    <div class="tag">请填写拒绝理由：</div>
+    <textarea id="pRej" placeholder="例如：资质不符"></textarea>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="pOpenDoReject(${id})">提交</button>`);
+}
+function pOpenDoReject(id){
+  const reason=(document.getElementById("pRej").value||"").trim();
+  PROVIDER_APPLY = PROVIDER_APPLY.filter(p=>p.id!==id);
+  closeModal(); toast("已拒绝服务商开户，理由："+(reason||"未填写")); renderProviderOpen(); renderKpi();
+}
+// ★ 新增：服务商变更审核渲染 & 操作
+function renderProviderChange(){
+  const q=$("pChangeQ").value?.trim()||"";
+  let list=[...PROVIDER_CHANGE];
+  if(q){
+    const qq=q.toLowerCase();
+    list=list.filter(x=> x.name.toLowerCase().includes(qq)
+      || (PROVIDERS.find(p=>p.id===x.providerId)?.phone||"").includes(q)
+      || (x.region||"").includes(q)
+      || (x.contact||"").includes(q));
+  }
+  $("pChangeBody").innerHTML = list.map(x=>`
+    <tr>
+      <td>${x.id}</td>
+      <td>${x.name}</td>
+      <td>${x.applyDate||"—"}</td>
+      <td>${x.contact||"—"}</td>
+      <td>${x.region||"—"}</td>
+      <td>${x.changes.map(c=> `<div><span class="subtle">${c.field}</span>：${c.old} → <b>${c.now}</b></div>`).join("")}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="prChangeApprove(${x.id})">通过</button>
+        <button class="pill" onclick="prChangeReject(${x.id})">拒绝</button>
+        <button class="pill" onclick="prChangeHistory(${x.providerId})">变更历史</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+function prChangeHistory(providerId){
+  const logs = PROVIDER_CHANGE_LOGS[providerId]||[];
+  const body = logs.length? logs.map(l=>`
+    <div style="padding:6px 0;">
+      <div class="tag">${l.date}</div>
+      ${l.items.map(it=> `<div>• ${it}</div>`).join("")}
+    </div>
+  `).join("") : "<div class='tag'>暂无历史记录</div>";
+  openModal("服务商变更历史", body);
+}
+function prChangeApprove(id){
+  const c=PROVIDER_CHANGE.find(x=>x.id===id);
+  const p=PROVIDERS.find(pp=>pp.id===c.providerId);
+  c.changes.forEach(ch=>{
+    if(ch.field==="联系电话") p.phone=ch.now;
+    if(ch.field==="区域") p.region=ch.now;
+    if(ch.field==="联系人") p.contact=ch.now;
+  });
+  PROVIDER_CHANGE = PROVIDER_CHANGE.filter(x=>x.id!==id);
+  toast("已通过服务商变更"); renderProviderChange(); renderProviderState(); renderKpi();
+}
+function prChangeReject(id){
+  openModal("拒绝服务商变更", `
+    <div class="tag">请填写拒绝理由：</div>
+    <textarea id="pChangeRej" placeholder="例如：变更信息不合理"></textarea>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="prChangeDoReject(${id})">提交</button>`);
+}
+function prChangeDoReject(id){
+  const reason=(document.getElementById("pChangeRej").value||"").trim();
+  PROVIDER_CHANGE = PROVIDER_CHANGE.filter(x=>x.id!==id);
+  closeModal(); toast("已拒绝服务商变更，理由："+(reason||"未填写")); renderProviderChange(); renderKpi();
+}
+
+function renderProviderState(){
+  const q=$("pStateQ").value?.trim()||""; const st=$("pStateStatus").value;
+  let list=[...PROVIDERS];
+  if(q){ const qq=q.toLowerCase(); list=list.filter(x=> x.name.toLowerCase().includes(qq) || x.contact.includes(q) || x.phone.includes(q) || (x.region||"").includes(q)); }
+  if(st) list=list.filter(x=> x.status===st);
+  $("pStateBody").innerHTML = list.map(x=>`
+    <tr>
+      <td>${x.id}</td>
+      <td>${x.name}</td>
+      <td>${x.contact}</td>
+      <td>${x.phone}</td>
+      <td>${x.region||"—"}</td>
+      <td>${badge(x.status)}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="prStateView(${x.id})">查看</button>
+        ${x.status==="正常"
+          ? `<button class="pill" onclick="prPause(${x.id})">暂停</button>`
+          : `<button class="pill" onclick="prResume(${x.id})">恢复</button>`}
+      </div></td>
+    </tr>
+  `).join("");
+}
+function prStateView(id){
+  const p=PROVIDERS.find(x=>x.id===id);
+  openModal("服务商详情", `
+    <div class="grid">
+      <div><div class="tag">服务商ID</div><div>${p.id}</div></div>
+      <div><div class="tag">服务商</div><div>${p.name}</div></div>
+      <div><div class="tag">联系人</div><div>${p.contact}</div></div>
+      <div><div class="tag">联系电话</div><div>${p.phone}</div></div>
+      <div><div class="tag">区域</div><div>${p.region||"—"}</div></div>
+      <div><div class="tag">状态</div><div>${p.status}</div></div>
+    </div>
+  `);
+}
+function prPause(id){ const p=PROVIDERS.find(x=>x.id===id); p.status="暂停"; toast("已暂停服务商："+p.name); renderProviderState(); renderKpi(); }
+function prResume(id){ const p=PROVIDERS.find(x=>x.id===id); p.status="正常"; toast("已恢复服务商："+p.name); renderProviderState(); renderKpi(); }
+
+/* ------------------ 商品审核 ------------------ */
+$("tabProdNew").onclick=()=> setProdTab("new");
+$("tabProdChange").onclick=()=> setProdTab("change");
+function setProdTab(t){
+  $("tabProdNew").classList.toggle("primary", t==="new");
+  $("tabProdChange").classList.toggle("primary", t==="change");
+  $("prod-new").style.display = (t==="new")?"block":"none";
+  $("prod-change").style.display = (t==="change")?"block":"none";
+  renderProducts();
+}
+function renderProducts(){
+  const opts = [...new Map(CATEGORIES.map(c=>[c.id,c])).values()].map(c=> `<option value="${c.id}">${c.name}</option>`).join("");
+  $("prodCat").innerHTML = '<option value="">全部分类</option>' + opts;
+  const q=$("prodQ").value?.trim()||""; const cat=$("prodCat").value;
+  // 新增
+  let newList=[...PRODUCT_APPLY];
+  if(q){ const qq=q.toLowerCase(); newList=newList.filter(p=> p.name.toLowerCase().includes(qq) || p.merchantName.includes(q) || (p.barcode||"").includes(q)); }
+  if(cat) newList=newList.filter(p=> String(p.categoryId)===cat);
+  $("prodNewBody").innerHTML = newList.map(p=>`
+    <tr>
+      <td>${p.id}</td>
+      <td>${p.name}（${p.merchantName}）</td>
+      <td>${p.categoryName}</td>
+      <td>${formatPrice(p.listPrice)}</td>
+      <td>${formatPrice(p.salePrice)}</td>
+      <td>${p.share}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="prodView(${p.id}, 'new')">查看</button>
+        <button class="pill" onclick="prodApprove(${p.id}, 'new')">直接通过</button>
+        <button class="pill" onclick="prodApproveWithShare(${p.id})">通过并设分账</button>
+        <button class="pill" onclick="prodReject(${p.id}, 'new')">拒绝</button>
+      </div></td>
+    </tr>
+  `).join("");
+  // 变更
+  let chList=[...PRODUCT_CHANGE];
+  if(q){ chList=chList.filter(p=> p.name.includes(q) || p.merchantName.includes(q)); }
+  if(cat){ chList=chList.filter(p=> String(p.categoryId)===cat); }
+  $("prodChangeBody").innerHTML = chList.map(p=>`
+    <tr>
+      <td>${p.id}</td>
+      <td>${p.name}（${p.merchantName}）</td>
+      <td>${p.changes.map(c=> `<div><span class="subtle">${c.field}</span>：${c.old} → <b>${c.now}</b></div>`).join("")}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="prodView(${p.id}, 'change')">查看</button>
+        <button class="pill" onclick="prodApprove(${p.id}, 'change')">通过</button>
+        <button class="pill" onclick="prodReject(${p.id}, 'change')">拒绝</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+function prodView(id, kind){
+  const p = (kind==="new" ? PRODUCT_APPLY.find(x=>x.id===id) : PRODUCT_CHANGE.find(x=>x.id===id));
+  const body = kind==="new"
+    ? `
+      <div class="grid">
+        <div><div class="tag">商品名称</div><div>${p.name}</div></div>
+        <div><div class="tag">商户</div><div>${p.merchantName}</div></div>
+        <div><div class="tag">分类</div><div>${p.categoryName}</div></div>
+        <div><div class="tag">条码</div><div>${p.barcode||"—"}</div></div>
+        <div><div class="tag">单位</div><div>${p.unit}</div></div>
+        <div><div class="tag">产地</div><div>${p.origin}</div></div>
+        <div><div class="tag">原价</div><div>${formatPrice(p.listPrice)}</div></div>
+        <div><div class="tag">销售价格</div><div>${formatPrice(p.salePrice)}</div></div>
+        <div style="grid-column:1/3"><div class="tag">分账比例</div><div>${p.share}</div></div>
+      </div>`
+    : `
+      <div class="tag">变更项</div>
+      ${p.changes.map(c=> `<div style="margin:6px 0;"><span class="subtle">${c.field}</span>：${c.old} → <b>${c.now}</b></div>`).join("")}
+    `;
+  openModal("商品审核详情", body);
+}
+// 新增：通过并设分账
+function prodApproveWithShare(id){
+  const p=PRODUCT_APPLY.find(x=>x.id===id);
+  openModal("设置分账比例并通过", `
+    <div class="grid">
+      <div><div class="tag">商品</div><div>${p.name}（${p.merchantName}）</div></div>
+      <div style="grid-column:1/3"><div class="tag">当前分账比例</div><div>${p.share}</div></div>
+      <div style="grid-column:1/3">
+        <div class="tag">新的分账比例 *</div>
+        <input id="newShare" type="text" value="${p.share}" placeholder="如：商户70% / 平台30%"/>
+      </div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="prodDoApproveWithShare(${id})">保存并通过</button>`);
+}
+function prodDoApproveWithShare(id){
+  const share=(document.getElementById("newShare").value||"").trim();
+  if(!share){ toast("请填写分账比例"); return; }
+  const p=PRODUCT_APPLY.find(x=>x.id===id);
+  const newId = Math.max(300, ...PRODUCT_ALL.map(x=>x.id)) + 1;
+  PRODUCT_ALL.push({id:newId, name:p.name, merchantId:p.merchantId, merchantName:p.merchantName, categoryId:p.categoryId, categoryName:p.categoryName, barcode:p.barcode, listPrice:p.listPrice, salePrice:p.salePrice, share:share, status:"已核准"});
+  PRODUCT_APPLY = PRODUCT_APPLY.filter(x=>x.id!==id);
+  closeModal(); toast("已设置分账并通过商品");
+  renderProducts(); renderProductSearch(); renderKpi();
+}
+function prodApprove(id, kind){
+  if(kind==="new"){
+    const p=PRODUCT_APPLY.find(x=>x.id===id);
+    const newId = Math.max(300, ...PRODUCT_ALL.map(x=>x.id)) + 1;
+    PRODUCT_ALL.push({id:newId, name:p.name, merchantId:p.merchantId, merchantName:p.merchantName, categoryId:p.categoryId, categoryName:p.categoryName, barcode:p.barcode, listPrice:p.listPrice, salePrice:p.salePrice, share:p.share, status:"已核准"});
+    PRODUCT_APPLY = PRODUCT_APPLY.filter(x=>x.id!==id);
+  }else{
+    const c=PRODUCT_CHANGE.find(x=>x.id===id);
+    const target = PRODUCT_ALL.find(x=> x.name===c.name && x.merchantId===c.merchantId);
+    if(target){
+      c.changes.forEach(ch=>{ if(ch.field==="销售价格") target.salePrice=Number(ch.now); if(ch.field==="分账比例") target.share=ch.now; });
+      target.status="已核准";
+    }
+    PRODUCT_CHANGE = PRODUCT_CHANGE.filter(x=>x.id!==id);
+  }
+  toast("已通过商品审核"); renderProducts(); renderProductSearch(); renderKpi();
+}
+function prodReject(id, kind){
+  openModal("拒绝商品审核", `
+    <div class="tag">请填写拒绝理由：</div>
+    <textarea id="rejectP" placeholder="例如：定价不合理/资料不完整"></textarea>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="prodDoReject(${id}, '${kind}')">提交</button>`);
+}
+function prodDoReject(id, kind){
+  const reason=(document.getElementById("rejectP").value||"").trim();
+  if(kind==="new"){ PRODUCT_APPLY = PRODUCT_APPLY.filter(x=>x.id!==id); }
+  else { PRODUCT_CHANGE = PRODUCT_CHANGE.filter(x=>x.id!==id); }
+  closeModal(); toast("已拒绝商品审核，理由："+(reason||"未填写")); renderProducts(); renderKpi();
+}
+
+/* ------------------ 分类（全局重名校验 + 二级与分账比例） ------------------ */
+function renderCategories(){
+  $("catBody").innerHTML = CATEGORIES.map(c=>{
+    const parent = c.parentId ? (CATEGORIES.find(p=>p.id===c.parentId)?.name || "—") : "—";
+    return `<tr>
+      <td>${c.id}</td><td>${c.name}</td><td>${parent}</td><td>${c.share||"—"}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="editCat(${c.id})">修改</button>
+        <button class="pill" onclick="addSubCat(${c.id})">新增二级</button>
+        <button class="pill" onclick="deleteCat(${c.id})">删除</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+function nameExistsGlobal(name, exceptId){
+  const key=(name||"").trim().toLowerCase();
+  return CATEGORIES.some(c=> c.id!==exceptId && c.name.trim().toLowerCase()===key);
+}
+function openAddCat(){
+  const parentOptions = '<option value="">无（一级分类）</option>' + CATEGORIES.filter(c=>!c.parentId).map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  openModal("新增分类", `
+    <div class="grid">
+      <div><div class="tag">分类名称 *</div><input id="catName" type="text" /></div>
+      <div><div class="tag">父级分类</div><select id="catParent">${parentOptions}</select></div>
+      <div><div class="tag">分账比例 *</div><input id="catShare" type="text" placeholder="如：商户70% / 平台30%" /></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitCat()">提交</button>`);
+}
+function submitCat(){
+  const name=(document.getElementById("catName").value||"").trim();
+  const parentVal=document.getElementById("catParent").value;
+  const share=(document.getElementById("catShare").value||"").trim();
+  if(!name||!share){ toast("请填写分类名称与分账比例"); return; }
+  if(nameExistsGlobal(name, null)){ toast("分类名称已存在：一级与二级均不可重名"); return; }
+  const id=Math.max(0,...CATEGORIES.map(c=>c.id))+1;
+  CATEGORIES.push({id,name,parentId: parentVal?Number(parentVal):null, share});
+  closeModal(); toast("已新增分类"); renderCategories(); refreshCategoryFilters();
+}
+function addSubCat(pid){
+  const parent = CATEGORIES.find(c=>c.id===pid);
+  openModal("新增二级分类", `
+    <div class="grid">
+      <div><div class="tag">父级分类</div><div>${parent.name}</div></div>
+      <div><div class="tag">二级名称 *</div><input id="subName" type="text"/></div>
+      <div><div class="tag">分账比例 *</div><input id="subShare" type="text" placeholder="如：商户70% / 平台30%"/></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitSubCat(${pid})">提交</button>`);
+}
+function submitSubCat(pid){
+  const name=(document.getElementById("subName").value||"").trim();
+  const share=(document.getElementById("subShare").value||"").trim();
+  if(!name||!share){ toast("请填写名称与分账比例"); return; }
+  if(nameExistsGlobal(name, null)){ toast("分类名称已存在：一级与二级均不可重名"); return; }
+  const id=Math.max(0,...CATEGORIES.map(c=>c.id))+1;
+  CATEGORIES.push({id,name,parentId:pid, share});
+  closeModal(); toast("已新增二级分类"); renderCategories(); refreshCategoryFilters();
+}
+function editCat(id){
+  const c=CATEGORIES.find(x=>x.id===id);
+  const parentOptions = '<option value="">无（一级分类）</option>' + CATEGORIES.filter(p=>!p.parentId || p.id===c.parentId).filter(p=>p.id!==id && !p.parentId).map(p=>`<option value="${p.id}" ${c.parentId===p.id?'selected':''}>${p.name}</option>`).join("");
+  openModal("修改分类", `
+    <div class="grid">
+      <div><div class="tag">分类名称 *</div><input id="editName" type="text" value="${c.name}"/></div>
+      <div><div class="tag">父级分类</div><select id="editParent">${parentOptions}</select></div>
+      <div><div class="tag">分账比例 *</div><input id="editShare" type="text" value="${c.share||''}"/></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveCat(${id})">保存</button>`);
+}
+function saveCat(id){
+  const name=(document.getElementById("editName").value||"").trim();
+  const parentVal=document.getElementById("editParent").value;
+  const share=(document.getElementById("editShare").value||"").trim();
+  if(!name||!share){ toast("请填写分类名称与分账比例"); return; }
+  if(nameExistsGlobal(name, id)){ toast("分类名称已存在：一级与二级均不可重名"); return; }
+  const c=CATEGORIES.find(x=>x.id===id); c.name=name; c.parentId=parentVal?Number(parentVal):null; c.share=share;
+  closeModal(); toast("已保存分类"); renderCategories(); refreshCategoryFilters();
+}
+function deleteCat(id){
+  const hasChildren = CATEGORIES.some(c=> c.parentId===id);
+  if(hasChildren){ toast("请先处理该分类下的二级分类后再删除"); return; }
+  CATEGORIES = CATEGORIES.filter(c=> c.id!==id);
+  toast("已删除分类"); renderCategories(); refreshCategoryFilters();
+}
+function refreshCategoryFilters(){
+  const uniq = [...new Map(CATEGORIES.map(c=>[c.id,c])).values()];
+  const opts = uniq.map(c=> `<option value="${c.id}">${c.name}</option>`).join("");
+  if($("prodCat")) $("prodCat").innerHTML = '<option value="">全部分类</option>' + opts;
+  if($("searchCat")) $("searchCat").innerHTML = '<option value="">全部分类</option>' + opts;
+}
+
+/* ------------------ 查询商品（支持 ID） ------------------ */
+function renderProductSearch(){
+  const q=$("searchQ").value?.trim()||""; const cat=$("searchCat").value; const st=$("searchStatus").value;
+  let list=[...PRODUCT_ALL];
+  if(q){
+    const qq=q.toLowerCase();
+    list=list.filter(p=> p.name.toLowerCase().includes(qq) || p.merchantName.includes(q) || String(p.id).includes(q));
+  }
+  if(cat) list=list.filter(p=> String(p.categoryId)===cat);
+  if(st) list=list.filter(p=> p.status===st);
+  $("searchBody").innerHTML = list.map(p=>`
+    <tr>
+      <td>${p.id}</td>
+      <td>${p.name}（${p.merchantName}）</td>
+      <td>${p.categoryName}</td>
+      <td>${formatPrice(p.listPrice)}</td>
+      <td>${formatPrice(p.salePrice)}</td>
+      <td>${badge(p.status)}</td>
+    </tr>
+  `).join("");
+}
+
+/* ------------------ 活动审核（增加历史 & 活动状态 & 商品过滤） ------------------ */
+function renderActivities(){
+  const q=$("actQ").value?.trim()||"";
+  const prodQ=$("actProdQ").value?.trim()||"";
+  const stageSel=$("actStage").value||"";
+  const fromVal=$("actStartFrom").value;
+  const toVal=$("actEndTo").value;
+  let list=[...ACTIVITIES];
+  if(q){
+    const qq=q.toLowerCase();
+    list=list.filter(a=> a.name.toLowerCase().includes(qq) || a.merchantName.includes(q) || String(a.id).includes(q));
+  }
+  if(prodQ){ const qq=prodQ.toLowerCase(); list=list.filter(a=> (a.productName||"").toLowerCase().includes(qq)); }
+  // ★ 修复：时间过滤改为“所选时间段必须完全覆盖活动起止日期”
+  if(fromVal || toVal){
+    list = list.filter(a=>{
+      const coversFrom = fromVal ? (fromVal <= a.start) : true;
+      const coversTo   = toVal   ? (toVal   >= a.end)   : true;
+      return coversFrom && coversTo;
+    });
+  }
+  // 计算活动状态
+  list = list.map(a => ({...a, _stage: calcActStage(a)}));
+  if(stageSel){ list = list.filter(a => a._stage === stageSel); }
+  $("actBody").innerHTML = list.map(a=>`
+    <tr>
+      <td>${a.id}</td>
+      <td>${a.name}</td>
+      <td>${a.productName||"—"}</td>
+      <td>${a.merchantName}</td>
+      <td>${a.start} ~ ${a.end}</td>
+      <td>${a.discount}</td>
+      <td>${badge(a._stage)}</td>
+      <td>
+        <div class="ops">
+          <button class="pill" onclick="actView(${a.id})">查看</button>
+          <button class="pill" onclick="actApprove(${a.id})">通过</button>
+          <button class="pill" onclick="actReject(${a.id})">拒绝</button>
+          <button class="pill" onclick="actHistory(${a.id})">审核历史</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+function actView(id){
+  const a=ACTIVITIES.find(x=>x.id===id);
+  openModal("活动审核详情", `
+    <div class="grid">
+      <div><div class="tag">活动名称</div><div>${a.name}</div></div>
+      <div><div class="tag">活动商品</div><div>${a.productName||"—"}</div></div>
+      <div><div class="tag">商户</div><div>${a.merchantName}</div></div>
+      <div><div class="tag">开始日期</div><div>${a.start}</div></div>
+      <div><div class="tag">结束日期</div><div>${a.end}</div></div>
+      <div style="grid-column:1/3"><div class="tag">打折方式</div><div>${a.discount}</div></div>
+    </div>
+  `);
+}
+function actApprove(id){
+  const a=ACTIVITIES.find(x=>x.id===id); a.status="通过";
+  (ACTIVITY_AUDIT_LOGS[id] = ACTIVITY_AUDIT_LOGS[id]||[]).push({time:new Date().toLocaleString(), by:"系统管理员", action:"审核通过", note:"同意上线", result:"通过"});
+  toast("已通过活动"); renderActivities(); renderKpi();
+}
+function actReject(id){
+  openModal("拒绝活动", `
+    <div class="tag">请填写拒绝理由：</div>
+    <textarea id="aRej" placeholder="例如：时间重叠/折扣不合规"></textarea>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="actDoReject(${id})">提交</button>`);
+}
+function actDoReject(id){
+  const reason=(document.getElementById("aRej").value||"").trim();
+  const a=ACTIVITIES.find(x=>x.id===id);
+  a.status="已拒绝"; a.rejectReason=reason||"未填写";
+  (ACTIVITY_AUDIT_LOGS[id] = ACTIVITY_AUDIT_LOGS[id]||[]).push({time:new Date().toLocaleString(), by:"系统管理员", action:"审核拒绝", note:a.rejectReason, result:"已拒绝"});
+  closeModal(); toast("已拒绝活动，理由："+a.rejectReason); renderActivities(); renderKpi();
+}
+function actHistory(id){
+  const logs = ACTIVITY_AUDIT_LOGS[id]||[];
+  const body = logs.length? logs.map(l=>`
+    <div class="grid" style="border-bottom:1px dashed var(--border); padding:8px 0;">
+      <div><div class="tag">时间</div><div>${l.time}</div></div>
+      <div><div class="tag">操作人</div><div>${l.by}</div></div>
+      <div><div class="tag">动作</div><div>${l.action}</div></div>
+      <div><div class="tag">结果</div><div>${l.result}</div></div>
+      <div style="grid-column:1/3"><div class="tag">备注</div><div>${l.note||"—"}</div></div>
+    </div>
+  `).join("") : "<div class='tag'>暂无审核历史</div>";
+  openModal("活动审核历史", body);
+}
+
+/* ------------------ 顾客管理（支持 ID） ------------------ */
+function renderCustomers(){
+  const q=$("custQ").value?.trim()||""; const st=$("custStatus").value;
+  let list=[...CUSTOMERS];
+  if(q){
+    const qq=q.toLowerCase();
+    list=list.filter(c=> c.name.includes(q) || c.phone.includes(q) || (c.email||"").toLowerCase().includes(qq) || String(c.id).includes(q));
+  }
+  if(st) list=list.filter(c=> c.status===st);
+  $("custBody").innerHTML = list.map(c=>`
+    <tr>
+      <td>${c.id}</td>
+      <td>${c.name}</td>
+      <td>${c.phone}</td>
+      <td>${c.email||"—"}</td>
+      <td>${badge(c.status)}</td>
+      <td>
+        <div class="ops">
+          <button class="pill" onclick="custBan(${c.id})">封禁</button>
+          <button class="pill" onclick="custUnban(${c.id})">解禁</button>
+          <button class="pill" onclick="custDeactivate(${c.id})">注销</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+function custBan(id){ const c=CUSTOMERS.find(x=>x.id===id); c.status="封禁"; toast("已封禁："+c.name); renderCustomers(); }
+function custUnban(id){ const c=CUSTOMERS.find(x=>x.id===id); c.status="正常"; toast("已解禁："+c.name); renderCustomers(); }
+function custDeactivate(id){ const c=CUSTOMERS.find(x=>x.id===id); c.status="注销"; toast("已注销："+c.name); renderCustomers(); }
+
+/* ------------------ 启动 ------------------ */
+function initApp(){
+  // 默认进入“商户管理”
+  switchRoute("merchants");
+  // 初始化各页
+  buildProviderCategoryOptions();
+  renderMerchantOpen(); renderMerchantChange(); renderMerchantState();
+  renderProviderOpen(); renderProviderChange(); renderProviderState();
+  renderProducts(); renderCategories(); refreshCategoryFilters(); renderProductSearch(); renderActivities(); renderCustomers();
+}
+window.addEventListener("DOMContentLoaded", initApp);
+</script>
+</body>
+</html>

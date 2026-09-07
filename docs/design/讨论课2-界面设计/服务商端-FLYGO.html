@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FLYGO · 服务商端</title>
+  <style>
+    :root{
+      --bg: linear-gradient(120deg,#eef2ff 0%, #f7f9fe 45%, #ecfeff 100%);
+      --chrome:#0f172a;
+      --chrome-2:#111827;
+      --on-chrome:#e8edff;
+      --panel:#ffffff;
+      --panel-2:#f5f7ff;
+      --border:#7dd3fc;
+      --text:#0f172a;
+      --muted:#64748b;
+      --primary:#4f46e5;
+      --primary-weak:#eef2ff;
+      --accent:#dbeafe;
+      --shadow: 0 10px 30px rgba(79,70,229,.10), 0 2px 10px rgba(15,23,42,.06);
+      --radius: 16px;
+      --shift:-110px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);background-attachment:fixed;color:var(--text);font:14px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}
+    .app{display:grid;grid-template-columns:260px 1fr;grid-template-rows:64px 1fr;grid-template-areas:"header header" "sidebar main";height:100%;}
+    header{grid-area:header;background:linear-gradient(90deg, var(--chrome) 0%, #182135 60%, #1e293b 100%);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(232,237,255,.18);position:sticky;top:0;z-index:5}
+    header .brand{font-weight:800;font-size:18px;letter-spacing:.2px;color:var(--on-chrome);}
+    header .user{display:flex;gap:8px;align-items:center;border:1px solid rgba(232,237,255,.25);padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--on-chrome);backdrop-filter:saturate(140%) blur(6px);}
+    aside{grid-area:sidebar;border-right:1px solid rgba(232,237,255,.18);background:linear-gradient(180deg, var(--chrome) 0%, #121a2d 60%, #182135 100%);overflow:auto;color:var(--on-chrome);}
+    .nav{padding:12px 10px;}
+    .nav h4{margin:8px 8px 10px;font-size:13px;color:#b7c3ff;}
+    .nav .item{padding:10px 12px;margin:6px 8px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--on-chrome);border:1px solid transparent;transition:all .15s;}
+    .nav .item:hover{background:rgba(255,255,255,.06);border-color:rgba(232,237,255,.18);}
+    .nav .item.active{background:#2b3561;border:1px solid #6b7cff;color:#fff;box-shadow:0 6px 16px rgba(105,117,255,.18) inset;}
+    main{grid-area:main;overflow:auto;padding:20px 24px 28px;}
+    .crumb{margin:8px 0 12px;color:#475569;}
+    .section{display:none;} .section.active{display:block;}
+    .kpi{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;}
+    .kpi .box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 14px;min-width:180px;box-shadow:var(--shadow)}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+    .toolbar{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;flex-wrap:wrap;}
+    input[type="text"], input[type="password"], select, input[type="date"], input[type="datetime-local"]{height:40px;border:1px solid var(--border);border-radius:12px;padding:0 12px;background:#fff;min-width:160px;outline:none;transition:border .15s, box-shadow .15s;}
+    input[type="text"]:focus, input[type="password"]:focus, select:focus, input[type="date"]:focus, input[type="datetime-local"]:focus{border-color:#aab9ff; box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+    textarea{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff;width:100%;min-height:100px;outline:none;transition:border .15s, box-shadow .15s;}
+    textarea:focus{border-color:#aab9ff; box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+    .btn{height:40px;border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;background:#fff;transition:all .15s; font-weight:600;color:#334155;}
+    .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .btn.primary:hover{filter:brightness(.96); transform: translateY(-1px);}
+    .btn.ghost{background:var(--primary-weak);color:#3730a3;border-color:#c7d2fe;}
+    .btn.ghost:hover{background:#e0e7ff;}
+    .stack{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .tag{font-size:12px;color:var(--muted);}
+    table{width:100%;border-collapse:separate;border-spacing:0;}
+    thead th{background:var(--panel-2);text-align:left;padding:12px;border-bottom:1px solid var(--border);font-weight:700;color:#334155;}
+    tbody td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    .ops{display:flex;gap:6px;flex-wrap:wrap;}
+    .pill{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer;font-size:12px;}
+    .pill:hover{border-color:#8fa2ff;background:#f0f4ff;}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:30;}
+    .card{width:min(980px,96vw);max-height:90vh;overflow:auto;background:var(--panel);border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .card header{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:800;background:var(--panel-2);}
+    .card .content{padding:14px 16px;}
+    .card footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:linear-gradient(180deg,transparent, #f7f9ff);}
+    .muted{color:var(--muted)}
+    .badge-ok{display:inline-flex;padding:2px 8px;border-radius:999px;border:1px solid #c6f6d5;background:#ecfdf5;color:#065f46;font-size:12px}
+    .badge-warn{display:inline-flex;padding:2px 8px;border-radius:999px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:12px}
+    .badge-err{display:inline-flex;padding:2px 8px;border-radius:999px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;font-size:12px}
+    .login-shell{max-width:1100px;margin:18px auto 0;display:grid;grid-template-columns:1.15fr 1fr;gap:20px;align-items:stretch;position:relative;left:var(--shift);}
+    .hero-visual{position:relative;overflow:hidden;border-radius:var(--radius);background:linear-gradient(120deg,#dbeafe 0%,#ffffff 50%,#e0e7ff 100%);border:1px solid var(--border);box-shadow:var(--shadow)}
+    .hero-visual::before{content:"";position:absolute;inset:0;background-image: radial-gradient(1000px 400px at -10% -20%, rgba(79,70,229,.18), transparent 60%), radial-gradient(800px 400px at 110% 120%, rgba(56,189,248,.14), transparent 60%);opacity:.9;pointer-events:none;}
+    .hero-visual .img{position:absolute;inset:0;background-size:cover;background-position:center;background-image:url('assets/login/visual.jpg');opacity:.22;}
+    .hero-visual .copy{position:relative;z-index:2;padding:32px 26px 28px;display:flex;flex-direction:column;height:100%}
+    .logo-badge{display:inline-flex;align-items:center;gap:8px;background:#111827;color:#fff;border-radius:999px;padding:6px 10px;font-weight:800;width:max-content;box-shadow:0 6px 16px rgba(2,6,23,.18)}
+    .hero-title{font-size:28px;font-weight:900;letter-spacing:.3px;margin:14px 0 4px;color:#111827;}
+    .hero-sub{color:#334155;max-width:56ch;}
+    .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:auto}
+    .hero-stats .stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+    .stat .num{font-weight:800;font-size:20px;color:#1f2937}
+    .stat .lab{font-size:12px;color:#64748b}
+    .login-card{padding:24px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow)}
+    .login-card h2{margin:0 0 14px;font-size:22px;letter-spacing:.2px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .full{grid-column:1/-1}
+    .note{font-size:12px;color:#64748b;margin-top:6px}
+    .register-shell{max-width:1000px;margin:18px auto 0;position:relative;left:var(--shift);display:grid;gap:12px}
+    @media (max-width: 980px){
+      :root{ --shift: 0px; }
+      .login-shell{grid-template-columns:1fr;max-width:680px}
+      .hero-visual{order:2}
+      .login-card{order:1}
+      .grid2{grid-template-columns:1fr}
+      header .user{display:none}
+      .register-shell{max-width:680px}
+    }
+    .subtle{background:linear-gradient(180deg, #fff, #f9fbff); border:1px dashed var(--border); padding:10px 12px; border-radius:12px;}
+  </style>
+</head>
+<body>
+<div class="app" id="appRoot">
+  <header>
+    <div class="brand">FLYGO · 服务商端</div>
+    <div class="user" id="userBox">未登录</div>
+  </header>
+  <aside id="sidebar">
+    <div class="nav">
+      <h4>导航</h4>
+      <div class="item" data-route="account">账号资料</div>
+      <div class="item" data-route="employees">员工管理</div>
+      <div class="item" data-route="contracts">服务合同</div>
+      <div class="item" data-route="orders">服务单</div>
+    </div>
+  </aside>
+  <main>
+    <div id="routeTitle" class="crumb">登录</div>
+    <div class="kpi" id="kpiBar"></div>
+
+    <!-- 登录页 -->
+    <section id="page-auth" class="section active">
+      <div class="login-shell">
+        <section class="hero-visual">
+          <div class="img" aria-hidden="true"></div>
+          <div class="copy">
+            <span class="logo-badge">FLYGO · 服务生态</span>
+            <h1 class="hero-title">让服务商协作更高效</h1>
+            <p class="hero-sub">统一的账号体系与合同、工单协同，使服务商团队从注册到履约全流程在线化、透明化、可追踪。</p>
+            <div class="hero-stats">
+              <div class="stat"><div class="num">4</div><div class="lab">核心功能</div></div>
+              <div class="stat"><div class="num">7×12h</div><div class="lab">推荐服务响应</div></div>
+              <div class="stat"><div class="num">48h</div><div class="lab">上门服务目标</div></div>
+              <div class="stat"><div class="num">30d</div><div class="lab">质保期</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="login-card">
+          <h2>登录到服务商账户</h2>
+          <div class="grid2">
+            <div>
+              <div class="tag">服务商名称 *</div>
+              <input id="loginName" type="text" placeholder="例如：优修科技" value="优修科技"/>
+            </div>
+            <div>
+              <div class="tag">管理员账号 *</div>
+              <input id="loginAccount" type="text" placeholder="管理员登录账号" value="admin"/>
+            </div>
+            <div class="full">
+              <div class="tag">登录密码 *</div>
+              <input id="loginPwd" type="password" placeholder="密码" value="******"/>
+            </div>
+            <div class="full stack" style="margin-top:6px">
+              <button class="btn primary" id="btnLogin">登录</button>
+              <button class="btn ghost" id="btnGotoRegister">注册服务商</button>
+              <span class="note"></span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- 注册页 -->
+    <section id="page-register" class="section">
+      <div class="register-shell">
+        <div class="panel" style="padding:16px;">
+          <div class="stack" style="justify-content:space-between">
+            <div>
+              <div class="tag">注册服务商</div>
+              <div style="font-size:18px;font-weight:800;color:#1f2937">创建新的服务商账户</div>
+            </div>
+            <div class="stack"><button class="btn" id="btnBackLogin">← 返回登录</button></div>
+          </div>
+        </div>
+        <div class="panel" style="padding:16px;">
+          <div class="grid2">
+            <div><div class="tag">服务商名称 *</div><input id="regName" type="text" placeholder="公司/团队名称"/></div>
+            <div><div class="tag">服务资质证明 *</div><input id="regCert" type="text" placeholder="资质证明编号/说明"/></div>
+            <div><div class="tag">服务商地址 *</div><input id="regAddr" type="text" placeholder="省市区 + 详细地址"/></div>
+            <div><div class="tag">管理员账号 *</div><input id="regAdmin" type="text" placeholder="登录账号"/></div>
+            <div><div class="tag">管理员姓名 *</div><input id="regAdminName" type="text" placeholder="姓名"/></div>
+            <div><div class="tag">登录密码 *</div><input id="regPwd" type="password" placeholder="密码"/></div>
+            <div><div class="tag">确认密码 *</div><input id="regPwd2" type="password" placeholder="再次输入"/></div>
+            <div><div class="tag">联系电话 *</div><input id="regPhone" type="text" placeholder="手机号"/></div>
+            <div><div class="tag">联系邮箱</div><input id="regEmail" type="text" placeholder="邮箱"/></div>
+            <div class="full">
+              <div class="tag">服务类别 *</div>
+              <label class="tag" style="display:inline-flex;align-items:center;gap:6px;margin-right:12px"><input type="checkbox" class="regCat" value="维修">维修</label>
+              <label class="tag" style="display:inline-flex;align-items:center;gap:6px;margin-right:12px"><input type="checkbox" class="regCat" value="仓配">仓配</label>
+              <label class="tag" style="display:inline-flex;align-items:center;gap:6px;margin-right:12px"><input type="checkbox" class="regCat" value="安装">安装</label>
+            </div>
+            <div class="full"><div class="tag">服务区域</div><input id="regRegion" type="text" placeholder="如：上海 全市"/></div>
+            <div class="full"><div class="tag">简介/备注</div><textarea id="regDesc" placeholder="资质说明、覆盖范围、服务承诺等"></textarea></div>
+            <div class="full stack"><label class="tag" style="display:inline-flex;align-items:center;gap:6px"><input id="regAgree" type="checkbox"> 我已阅读并同意平台服务协议</label><button class="btn ghost" id="btnRegSubmit">提交注册并进入</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 主功能：账号资料 / 员工管理 / 合同 / 服务单 -->
+    <section id="page-account" class="section">
+      <div class="panel" style="padding:16px;">
+        <div id="accAuditBar" class="subtle" style="display:none;margin-bottom:10px;"><span class="badge-warn">待审核</span> 资料变更已提交，等待平台审核。</div>
+        <div class="grid2">
+          <div><div class="tag">服务商名称</div><input id="accName" type="text" value="优修科技"/></div>
+          <div><div class="tag">负责人</div><input id="accOwner" type="text" value="李经理"/></div>
+          <div><div class="tag">联系电话</div><input id="accPhone" type="text" value="400-000-0000"/></div>
+          <div><div class="tag">邮箱</div><input id="accEmail" type="text" value="service@example.com"/></div>
+          <!-- 新增：服务商地址 -->
+          <div class="full"><div class="tag">服务商地址</div><textarea id="accAddr" placeholder="省市区 + 详细地址" style="min-height:64px;resize:vertical;">上海市浦东新区世纪大道100号</textarea></div>
+          <!-- 新增：服务类别（可多选） -->
+          <div class="full">
+            <div class="tag">服务类别</div>
+            <label class="tag" style="display:inline-flex;align-items:center;gap:6px;margin-right:12px"><input type="checkbox" class="accCat" value="维修">维修</label>
+            <label class="tag" style="display:inline-flex;align-items:center;gap:6px;margin-right:12px"><input type="checkbox" class="accCat" value="仓配">仓配</label>
+            <label class="tag" style="display:inline-flex;align-items:center;gap:6px;margin-right:12px"><input type="checkbox" class="accCat" value="安装">安装</label>
+          </div>
+          <!-- 新增：服务区域 -->
+          <div class="full"><div class="tag">服务区域</div><input id="accRegion" type="text" placeholder="如：上海 全市" value="上海 全市"/></div>
+          <div class="full"><div class="tag">简介</div><textarea id="accDesc">覆盖华东区域，提供到家维修与仓配服务。</textarea></div>
+        </div>
+        <div class="stack" style="margin-top:10px"><button class="btn primary" onclick="saveAccount()">保存资料</button></div>
+      </div>
+    </section>
+
+    <section id="page-employees" class="section">
+      <!-- <div class="toolbar"><input id="empQ" type="text" placeholder="账号 / 名称 / 权限" /><button class="btn" id="btnEmpSearch">搜索</button><div style="flex:1"></div><button class="btn primary" id="btnEmpAdd">+ 新增员工</button></div> -->
+
+      <div class="toolbar">
+        <input id="empQ" type="text" placeholder="账号 / 名称 / 权限" />
+        <button class="btn" id="btnEmpSearch">搜索</button>
+        <div style="flex:1"></div>
+        <button class="btn" id="btnEmpReview">审核修改</button>
+        <button class="btn primary" id="btnEmpAdd">+ 新增员工</button>
+      </div>
+
+      <div class="panel" style="margin-top:12px;"><table><thead><tr><th style="width:160px">账号</th><th style="width:160px">账户名称</th><th>描述</th><th style="width:160px">权限</th><th style="width:260px">操作</th></tr></thead><tbody id="empBody"></tbody></table></div>
+    </section>
+
+    <section id="page-contracts" class="section">
+      <div class="toolbar"><input id="ctQ" type="text" placeholder="服务商/服务名称/服务区域或地点" /><select id="ctStatus"><option value="">全部状态</option><option>待确认</option><option>已确认</option><option>暂停</option><option>已取消</option></select><button class="btn" id="btnCtSearch">搜索</button></div>
+      <div class="panel" style="margin-top:12px;"><table><thead><tr><th style="width:120px">合同ID</th><th>商户名称</th><th style="width:160px">服务名称</th><th style="width:160px">服务区域</th><th style="width:160px">服务起止</th><th style="width:120px">状态</th><th style="width:360px">操作</th></tr></thead><tbody id="ctBody"></tbody></table></div>
+    </section>
+
+      <section id="page-orders" class="section">
+        <div class="toolbar"><input id="odQ" type="text" placeholder="服务单号/服务名称/产品/顾客姓名/电话" /><select id="odStatus"><option value="">全部状态</option><option>待接受</option><option>已接受</option><option>已派工</option><option>已收件</option><option>已完成</option><option>已取消</option></select><button class="btn" id="btnOdFilter">查询</button></div>
+        <div class="panel" style="margin-top:12px;"><table><thead><tr><th style="width:120px">服务单ID</th><th style="width:160px">服务名称</th><th style="width:140px">产品</th><th style="width:140px">商户</th><th style="width:140px">服务地区</th><th style="width:100px">状态</th><th style="width:120px">顾客姓名</th><th style="width:140px">联系电话</th><th style="width:320px">操作</th></tr></thead><tbody id="odBody"></tbody></table></div>
+      </section>
+
+  </main>
+</div>
+
+<div class="overlay" id="modal">
+  <div class="card">
+    <header id="modalTitle">标题</header>
+    <div class="content" id="modalBody"></div>
+    <footer id="modalFooter"><button class="btn" onclick="closeModal()">关闭</button></footer>
+  </div>
+</div>
+
+<div id="toast" style="position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;padding:10px 12px;border-radius:10px;display:none;z-index:100;">提示</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+function toast(msg, ms=1800){ const t=$("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none", ms); }
+function autoResize(el){ el.style.height='auto'; el.style.height = Math.min(el.scrollHeight, 240) + 'px'; }
+function openModal(title, bodyHTML, footerHTML){ $("modalTitle").textContent=title; $("modalBody").innerHTML=bodyHTML; $("modalFooter").innerHTML=footerHTML||'<button class="btn" onclick="closeModal()">关闭</button>'; $("modal").style.display="flex"; }
+function closeModal(){ $("modal").style.display="none"; }
+function fmt(dt){ const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,"0"), d=String(dt.getDate()).padStart(2,"0"), hh=String(dt.getHours()).padStart(2,"0"), mm=String(dt.getMinutes()).padStart(2,"0"); return y+'-'+m+'-'+d+' '+hh+':'+mm; }
+function badge(s){
+  const ok = ["在营","已确认","在职","已接受","已派工","已收件","已完成"];
+  const warn = ["待确认","暂停","审核中"];
+  const err = ["已取消","离职"];
+  if(ok.includes(s)) return '<span class="badge-ok">'+s+'</span>';
+  if(warn.includes(s)) return '<span class="badge-warn">'+s+'</span>';
+  return '<span class="badge-err">'+s+'</span>';
+}
+
+/* 数据 */
+let PROVIDER = { 
+  name:"优修科技", 
+  status:"在营",
+  accAudit:null, 
+  addr:"上海市浦东新区世纪大道100号",
+  cats:["维修","仓配"],
+  region:"上海 全市",
+  owner:"李经理",
+  phone:"400-000-0000",
+  email:"service@example.com",
+  desc:"覆盖华东区域，提供到家维修与仓配服务。"
+};
+let AUTHED = false;
+let REG_APPS = [];
+
+let EMPLOYEES = [
+  {account:"tech_zhang",     name:"张师傅",   password:"******", phone:"13600000000", desc:"一线维修工程师（手机/小家电）", role:"工程师", status:"在职", engId:"ENG-9001", workStatus:"空闲", serviceArea:"浦东/闵行", skills:["手机快修","小家电线路"]},
+  {account:"dispatcher_li",  name:"李调度",   password:"******", phone:"13900001111", desc:"排班与派工",                 role:"调度",   status:"在职"},
+  {account:"tech_wang",      name:"王师傅",   password:"******", phone:"13500003333", desc:"冰箱/冰柜制冷方向",          role:"工程师", status:"在职", engId:"ENG-9002", workStatus:"在单", serviceArea:"徐汇/静安", skills:["制冷系统","压缩机更换"]},
+  {account:"tech_sun",       name:"孙师傅",   password:"******", phone:"13700004444", desc:"洗衣机/干衣机高级维修",      role:"工程师", status:"在职", engId:"ENG-9003", workStatus:"备勤", serviceArea:"长宁/普陀", skills:["滚筒洗衣机","电机维护"]},
+  {account:"admin_zhou",     name:"周管理员", password:"******", phone:"18000005555", desc:"平台管理员",                 role:"管理员", status:"在职"},
+];
+
+let EMP_CHANGE_REQS = [
+  {
+    id: "ER-3001",
+    account: "tech_zhang",
+    submittedAt: fmt(new Date()),
+    // 只放“员工申请修改”的字段（不填即视为未改）
+    fields: { phone: "13688889999", desc: "一线维修工程师（擅长冰洗/压缩机）" }
+  },
+  {
+    id: "ER-3002",
+    account: "dispatcher_li",
+    submittedAt: fmt(new Date()),
+    fields: { name: "李倩", phone: "13900002222", desc: "排班与派工（白班）" }
+  }
+];
+
+// 新增：员工历史修改日志（按账号存放）
+let EMP_CHANGE_LOGS = {}; 
+
+let CONTRACTS = [
+  {id:"CT-1001", merchant:"极客数码", merchantPhone:"021-66668888", contact:"陈店长", contactPhone:"13816668888", provider:"优修科技", serviceName:"数码产品上门维修", serviceArea:"浦东新区 · 张江/金桥", serviceLocation:"浦东智慧园服务中心", start:"2025-09-01", end:"2026-08-31", terms:"7x12响应；上门服务≤48h；保外价格表附后。", status:"待确认", pauseReason:null, cancelReason:null},
+  {id:"CT-1002", merchant:"乐活百货", merchantPhone:"021-66660000", contact:"李副总", contactPhone:"13918889999", provider:"优修科技", serviceName:"门店家电巡检驻场", serviceArea:"徐汇/静安核心商圈", serviceLocation:"徐汇凯旋路服务驻点", start:"2025-01-01", end:"2025-12-31", terms:"NBD 响应；备件由商户承担；纠纷走平台仲裁。", status:"暂停", pauseReason:"商户阶段性下线门店", cancelReason:null},
+  {id:"CT-1003", merchant:"未来家电", merchantPhone:"021-12345678", contact:"赵采购", contactPhone:"13719990000", provider:"优修科技", serviceName:"仓配售后联保", serviceArea:"长三角仓配网络", serviceLocation:"闵行虹梅路履约仓", start:"2025-02-01", end:"2025-12-31", terms:"标准SLA；质保30天。", status:"已确认", pauseReason:null, cancelReason:null},
+];
+
+function matchesContractKeyword(contract, keyword){
+  if(!keyword){ return true; }
+  const q = keyword.toLowerCase();
+  return [contract.provider, contract.serviceName, contract.serviceArea, contract.serviceLocation]
+    .some(field => (field||"").toLowerCase().includes(q));
+}
+
+function orderServiceName(o){
+  return o.serviceName || o.item || "—";
+}
+function orderProduct(o){
+  if(o.product){ return o.product; }
+  const device = o.device || {};
+  const combo = [device.brand, device.model].filter(Boolean).join(" ").trim();
+  return combo || device.type || "—";
+}
+function matchesOrderKeyword(order, keyword){
+  if(!keyword){ return true; }
+  const q = keyword.toLowerCase();
+  return [
+    order.id,
+    orderServiceName(order),
+    orderProduct(order),
+    order.customerName,
+    order.customerPhone
+  ].some(field => (field||"").toLowerCase().includes(q));
+}
+/* 服务单示例数据增强：补充维修地址、问题详情等 */
+let ORDERS = [
+  {id:"WO-2001", merchant:"极客数码", item:"手机维修", serviceName:"旗舰手机极速维修", product:"Xiaomi 13 Pro", serviceArea:"浦东新区 · 张江", status:"待接受",
+   customerName:"王女士", customerPhone:"13800000001",
+   requestTime:"2025-10-22 10:35", appointment:"2025-10-24 14:00-16:00",
+   address:"上海市浦东新区张江路88号 A幢302室",
+   device:{type:"手机", brand:"Xiaomi", model:"13 Pro", sn:"XM13P-9921"},
+   problem:"摔落后屏幕碎裂，偶发黑屏，触控不灵敏；需要同时检测主板是否受损。",
+   attachments:["屏幕碎裂照片1","黑屏照片2"],
+   sla:"48小时内上门/寄修均可", feeEstimate:"￥300-800（检查后确认）",
+   notes:"优先安排上门，客户可接受更换原厂件。",
+   historyCount:0, acceptTime:null, dispatchTime:null, receiveTime:null, completeTime:null,
+   logistics:null, engineer:null
+  },
+  {id:"WO-2002", merchant:"乐活百货", item:"冰箱维修", serviceName:"门店冰箱深度检修", product:"Haier BCD-471WDPG", serviceArea:"徐汇区 · 凯旋路商圈", status:"已接受",
+   customerName:"赵先生", customerPhone:"13900000002",
+   requestTime:"2025-10-20 09:10", appointment:"2025-10-23 09:00-11:00",
+   address:"上海市徐汇区凯旋路500号 2单元1502",
+   device:{type:"冰箱", brand:"Haier", model:"BCD-471WDPG", sn:"H471-ABCD"},
+   problem:"制冷效果差，上层冷冻室无法结冰，伴随异响。",
+   attachments:[],
+   sla:"24小时内响应，上门检修≤48小时",
+   feeEstimate:"￥120 上门检测费（维修抵扣），配件额外计费",
+   notes:"需带常见温控器与压缩机启动继电器备件。",
+   historyCount:1, acceptTime:"2025-10-20 09:20", dispatchTime:"2025-10-21 18:30", receiveTime:null, completeTime:null,
+   logistics:null, engineer:{name:"张师傅", phone:"13600000000"}
+  },
+  {id:"WO-2003", merchant:"乐活百货", item:"洗衣机维修（寄修）", serviceName:"洗衣机离心寄修", product:"Bosch WAW28760", serviceArea:"闵行区 · 虹梅物流区", status:"已派工",
+   customerName:"李小姐", customerPhone:"13700000003",
+   requestTime:"2025-10-19 15:45", appointment:"寄修（无需上门）",
+   address:"上海市闵行区虹梅路1000号 5号仓收发区",
+   device:{type:"洗衣机", brand:"Bosch", model:"WAW28760", sn:"BSH-WAW-7766"},
+   problem:"脱水震动异常，显示E18错误码，排水不畅。",
+   attachments:["报警码照片"],
+   sla:"收件后72小时内给出维修方案",
+   feeEstimate:"按报价单", notes:"客户要求先报修价再处理。",
+   historyCount:2, acceptTime:"2025-10-19 16:00", dispatchTime:"2025-10-20 10:00", receiveTime:null, completeTime:null,
+   logistics:{waybill:"SF1234567890", weight:"18kg", remark:"客户已自寄至仓"},
+   engineer:{name:"王师傅", phone:"13500000005"}
+  }
+];
+
+/* 路由与KPI */
+const ROUTES = {
+  auth:{title:"登录", kpi: ()=>{ $("kpiBar").innerHTML=""; }, render: ()=>{} },
+  register:{title:"注册服务商", kpi: ()=>{ $("kpiBar").innerHTML=""; }, render: ()=>{} },
+  account:{title:"首页 / 账号资料", kpi: renderKPI, render: renderAccount},
+  employees:{title:"首页 / 员工管理", kpi: renderKPI, render: renderEmployees},
+  contracts:{title:"首页 / 服务合同", kpi: renderKPI, render: renderContracts},
+  orders:{title:"首页 / 服务单", kpi: renderKPI, render: renderOrders},
+};
+function switchRoute(route){
+  document.querySelectorAll("aside .item").forEach(it=> it.classList.toggle("active", it.dataset.route===route));
+  $("routeTitle").textContent = ROUTES[route].title;
+  document.querySelectorAll(".section").forEach(sec=> sec.classList.remove("active"));
+  $("page-"+route).classList.add("active");
+  const authStage = (route==="auth" || route==="register");
+  $("sidebar").style.display = authStage ? "none" : "block";
+  $("userBox").innerHTML = authStage ? "未登录" : `当前服务商：<strong id="spName">${PROVIDER.name}</strong> ｜ <span id="spStatus" class="${PROVIDER.status==='在营'?'badge-ok':'badge-warn'}">${PROVIDER.status}</span>`;
+  ROUTES[route].kpi(); ROUTES[route].render();
+}
+document.querySelectorAll("aside .item").forEach(it=> it.addEventListener("click", ()=> switchRoute(it.dataset.route)));
+
+function renderKPI(){
+  const todoReg = REG_APPS.filter(a=>a.status==="审核中").length;
+  const waitingCt = CONTRACTS.filter(c=>c.status==="待确认").length;
+  const pausedCt = CONTRACTS.filter(c=>c.status==="暂停").length;
+  const empCount = EMPLOYEES.length;
+  $("kpiBar").innerHTML = [
+    {label:"注册审核中", value:todoReg},
+    {label:"待确认合同", value:waitingCt},
+    {label:"暂停合同", value:pausedCt},
+    {label:"员工数", value:empCount},
+  ].map(x=>`<div class="box"><div class="tag">${x.label}</div><div style="font-weight:800;font-size:20px;color:#1f2937">${x.value}</div></div>`).join("");
+}
+
+/* 登录/注册流程 */
+$("btnLogin")?.addEventListener("click", ()=>{
+  const name = $("loginName").value.trim();
+  const account = $("loginAccount").value.trim();
+  const pwd = $("loginPwd").value;
+  if(!name||!account||!pwd){ toast("请填写完整登录信息"); return; }
+  PROVIDER.name = name || "未命名服务商";
+  PROVIDER.status = (name==="优修科技" ? "在营" : "审核中");
+  AUTHED = true;
+  enterApp();
+  toast("登录成功");
+});
+$("btnGotoRegister")?.addEventListener("click", ()=> switchRoute("register"));
+$("btnBackLogin")?.addEventListener("click", ()=> switchRoute("auth"));
+
+function submitRegister(){
+  const name = $("regName").value.trim();
+  const cert = $("regCert").value.trim();
+  const addr = $("regAddr").value.trim();
+  const admin = $("regAdmin").value.trim();
+  const adminName = $("regAdminName").value.trim();
+  const pwd = $("regPwd").value; const pwd2 = $("regPwd2").value;
+  const phone = $("regPhone").value.trim();
+  const email = $("regEmail").value.trim();
+  const region = $("regRegion").value.trim();
+  const agree = $("regAgree").checked;
+  const cats = [...document.querySelectorAll(".regCat:checked")].map(x=>x.value);
+  if(!name||!cert||!addr||!admin||!adminName||!pwd||!pwd2||!phone||cats.length===0){ toast("请完善必填项"); return; }
+  if(pwd!==pwd2){ toast("两次密码不一致"); return; }
+  if(!agree){ toast("请先同意服务协议"); return; }
+  const app = {time: fmt(new Date()), name, cert, addr, admin, adminName, phone, email, region, cats, status:"审核中"};
+  REG_APPS.unshift(app);
+  // 同步到 PROVIDER 基本资料
+  Object.assign(PROVIDER, {name, addr, cats, region, owner:adminName, phone, email, desc:""});
+  PROVIDER.status = "审核中"; AUTHED = true;
+  toast("已提交注册申请，进入主界面（审核中）");
+  enterApp();
+}
+$("btnRegSubmit")?.addEventListener("click", submitRegister);
+
+function enterApp(){ 
+  switchRoute("account"); 
+}
+
+function renderAccount(){
+  $("accName").value = PROVIDER.name||"";
+  $("accOwner").value = PROVIDER.owner||"";
+  $("accPhone").value = PROVIDER.phone||"";
+  $("accEmail").value = PROVIDER.email||"";
+  $("accAddr").value = PROVIDER.addr||"";
+  autoResize($("accAddr"));
+  $("accRegion").value = PROVIDER.region||"";
+  // 勾选服务类别
+  const chk = document.querySelectorAll(".accCat");
+  chk.forEach(c=> c.checked = (PROVIDER.cats||[]).includes(c.value));
+  $("accDesc").value = PROVIDER.desc||"";
+  const _bar = $("accAuditBar"); if(_bar){ _bar.style.display = (PROVIDER.accAudit==="待审核") ? "block" : "none"; }
+}
+
+function saveAccount(){ 
+  autoResize($("accAddr"));
+  PROVIDER.name = $("accName").value.trim() || PROVIDER.name;
+  PROVIDER.owner = $("accOwner").value.trim();
+  PROVIDER.phone = $("accPhone").value.trim();
+  PROVIDER.email = $("accEmail").value.trim();
+  PROVIDER.addr = $("accAddr").value.trim();
+  PROVIDER.region = $("accRegion").value.trim();
+  PROVIDER.cats = [...document.querySelectorAll(".accCat:checked")].map(x=>x.value);
+  PROVIDER.desc = $("accDesc").value.trim();
+  PROVIDER.accAudit="待审核";
+  const _bar2=$("accAuditBar"); if(_bar2){ _bar2.style.display="block"; }
+  toast("资料已保存，状态：待审核（演示）");
+  const n=$("accName").value;
+  $("spName").textContent=n;
+}
+
+// ==== 员工历史日志辅助 ====
+const EMP_KEYS = ["name","phone","role","desc","password","status"];
+function ensureEmpLog(ac){ if(!EMP_CHANGE_LOGS[ac]) EMP_CHANGE_LOGS[ac]=[]; }
+function diffFields(before, after, keys=EMP_KEYS){
+  const out={};
+  keys.forEach(k=>{
+    const b = before && Object.prototype.hasOwnProperty.call(before,k) ? before[k] : undefined;
+    const a = after && Object.prototype.hasOwnProperty.call(after,k) ? after[k] : undefined;
+    if(b !== a){
+      out[k] = { old: b===undefined ? "—" : b, new: a===undefined ? "—" : a };
+    }
+  });
+  return out;
+}
+function logEmpChange(account, changes, source){
+  if(!changes || Object.keys(changes).length===0) return;
+  ensureEmpLog(account);
+  EMP_CHANGE_LOGS[account].unshift({ time: fmt(new Date()), source: source || "编辑", changes });
+}
+
+/* 员工管理/合同/工单 */
+$("btnEmpSearch").onclick = renderEmployees;
+$("btnEmpAdd").onclick = openEmpAdd;
+$("btnEmpReview").onclick = openEmpReview;
+
+function renderEmployees(){
+  const q = $("empQ").value.trim();
+  let list=[...EMPLOYEES];
+  if(q) list=list.filter(e=> e.account.includes(q)||e.name.includes(q)||e.role.includes(q));
+  $("empBody").innerHTML = list.map((e,i)=>`
+    <tr>
+      <td>${e.account}</td>
+      <td>${e.name}</td>
+      <td class="muted">${e.desc||"—"}</td>
+      <td>${e.role}</td>
+      <td>
+        <div class="ops">
+          <button class="pill" onclick="openEmpView(${i})">查看</button>
+          <button class="pill" onclick="empDeactivate(${i})">${e.status==="在职"?"停用":"启用"}</button>
+          <button class="pill" onclick="empDelete(${i})">删除</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function openEmpAdd(){
+  openModal("新增员工账号", `
+    <div class="grid2">
+      <div><div class="tag">账号 *</div><input id="eAccount" type="text" placeholder="登录账号"/></div>
+      <div><div class="tag">账户名称 *</div><input id="eName" type="text" placeholder="显示名称"/></div>
+      <div><div class="tag">密码 *</div><input id="ePwd" type="password" placeholder="初始密码"/></div>
+      <div><div class="tag">手机号</div><input id="ePhone" type="text" placeholder="例如：13600000000"/></div>
+      <div class="full"><div class="tag">权限 *</div>
+        <select id="eRole"><option>工程师</option><option>调度</option><option>管理员</option></select>
+      </div>
+      <div class="full"><div class="tag">账号描述</div><textarea id="eDesc" placeholder="职责范围、技能等"></textarea></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="doEmpAdd()">保存</button>`);
+}
+
+function doEmpAdd(){
+  const account=$("eAccount").value.trim();
+  const name=$("eName").value.trim();
+  const pwd=$("ePwd").value;
+  const phone=$("ePhone").value.trim();
+  const role=$("eRole").value;
+  const desc=$("eDesc").value.trim();
+
+  if(!account||!name||!pwd||!role){ toast("请填写必填项"); return; }
+  if(EMPLOYEES.some(e=>e.account===account)){ toast("账号已存在"); return; }
+  if(role==="工程师" && !phone){ toast("工程师必须填写手机号"); return; }
+
+  const after = {account, name, password:pwd, phone, desc, role, status:"在职"};
+  EMPLOYEES.push(after);
+
+  // 历史：新增
+  logEmpChange(account, {
+    name:{old:"—", new:after.name},
+    phone:{old:"—", new:after.phone||"—"},
+    role:{old:"—", new:after.role},
+    desc:{old:"—", new:after.desc||"—"},
+    password:{old:"—", new:after.password},
+    status:{old:"—", new:"在职"},
+  }, "新增员工");
+
+  closeModal(); toast("已新增员工"); renderEmployees(); renderKPI();
+}
+
+function openEmpEdit(i){
+  const e=EMPLOYEES[i];
+  openModal("编辑员工账号", `
+    <div class="grid2">
+      <div><div class="tag">账号 *</div><input id="eAccount" type="text" value="${e.account}" disabled/></div>
+      <div><div class="tag">账户名称 *</div><input id="eName" type="text" value="${e.name}"/></div>
+      <div><div class="tag">密码 *</div><input id="ePwd" type="password" value="${e.password}"/></div>
+      <div><div class="tag">手机号</div><input id="ePhone" type="text" value="${e.phone||''}" placeholder="例如：13600000000"/></div>
+      <div class="full"><div class="tag">权限 *</div>
+        <select id="eRole">
+          <option ${e.role==="工程师"?"selected":""}>工程师</option>
+          <option ${e.role==="调度"?"selected":""}>调度</option>
+          <option ${e.role==="管理员"?"selected":""}>管理员</option>
+        </select>
+      </div>
+      <div class="full"><div class="tag">账号描述</div><textarea id="eDesc">${e.desc||""}</textarea></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="doEmpEdit(${i})">保存</button>`);
+}
+
+function doEmpEdit(i){
+  const name=$("eName").value.trim();
+  const pwd=$("ePwd").value;
+  const phone=$("ePhone").value.trim();
+  const role=$("eRole").value;
+  const desc=$("eDesc").value.trim();
+
+  if(!name||!pwd||!role){ toast("请填写必填项"); return; }
+  if(role==="工程师" && !phone){ toast("工程师必须填写手机号"); return; }
+
+  const before = {...EMPLOYEES[i]};
+  const after  = {...before, name, password:pwd, phone, role, desc};
+
+  const changes = diffFields(before, after);
+  Object.assign(EMPLOYEES[i], after);
+
+  if(Object.keys(changes).length){ logEmpChange(before.account, changes, "管理员编辑"); }
+
+  closeModal(); toast("已更新员工信息"); renderEmployees();
+}
+
+// 二级界面：查看员工详情（含 编辑 / 历史记录 按钮）
+function openEmpView(i){
+  const e=EMPLOYEES[i];
+  if(!e){ toast("未找到该员工"); return; }
+  openModal(
+    "员工信息",
+    `
+    <div class="grid2">
+      <div><div class="tag">账号</div><div>${e.account}</div></div>
+      <div><div class="tag">状态</div><div>${e.status}</div></div>
+      <div><div class="tag">姓名</div><div>${e.name||"—"}</div></div>
+      <div><div class="tag">手机号</div><div>${e.phone||"—"}</div></div>
+      <div><div class="tag">权限</div><div>${e.role||"—"}</div></div>
+      <div class="full"><div class="tag">描述</div><div class="muted">${e.desc||"—"}</div></div>
+    </div>
+    `,
+    `<button class="btn ghost" onclick="openEmpHistory('${e.account}')">历史记录</button>
+     <button class="btn" onclick="openEmpEdit(${i})">编辑</button>
+     <button class="btn" onclick="closeModal()">关闭</button>`
+  );
+}
+
+// 三级界面：查看历史记录（按时间倒序）
+function openEmpHistory(account){
+  const logs = EMP_CHANGE_LOGS[account] || [];
+  const fieldName = { name:"名称", phone:"手机号", role:"权限", desc:"描述", password:"密码", status:"状态" };
+  const rows = logs.length
+    ? logs.map(log=>{
+        const items = Object.keys(log.changes).map(k=>{
+          const v = log.changes[k];
+          return `<div class="tag" style="display:block;margin:2px 0">${fieldName[k]||k}：<span>${v.old}</span> → <strong>${v.new}</strong></div>`;
+        }).join("");
+        return `
+          <tr>
+            <td style="width:160px">${log.time}</td>
+            <td style="width:140px">${log.source||"—"}</td>
+            <td>${items||"—"}</td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="3" class="muted" style="text-align:center;padding:20px;">暂无历史记录</td></tr>`;
+
+  openModal(
+    `历史记录 · ${account}`,
+    `
+    <div class="panel">
+      <table>
+        <thead><tr><th style="width:160px">修改时间</th><th style="width:140px">来源</th><th>变更项（旧 → 新）</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    `,
+    `<button class="btn" onclick="closeModal()">关闭</button>`
+  );
+}
+
+// ===== 员工修改申请：审核二级窗口 =====
+function openEmpReview(){
+  openModal(
+    "审核员工修改",
+    `
+    <div class="subtle">共 <strong id="reqCount">0</strong> 条待审申请</div>
+    <div class="panel" style="margin-top:8px;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px">申请单号</th>
+            <th style="width:140px">员工账号</th>
+            <th style="width:160px">提交时间</th>
+            <th>变更项（旧 → 新）</th>
+            <th style="width:220px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="reqBody"></tbody>
+      </table>
+    </div>
+    `,
+    `<button class="btn" onclick="closeModal()">关闭</button>`
+  );
+  renderEmpReviewTable();
+}
+
+function renderEmpReviewTable(){
+  const body = document.getElementById('reqBody');
+  const count = document.getElementById('reqCount');
+  if(count) count.textContent = String(EMP_CHANGE_REQS.length);
+
+  if(!EMP_CHANGE_REQS.length){
+    if(body) body.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:24px;">暂无待审申请</td></tr>';
+    return;
+  }
+
+  body.innerHTML = EMP_CHANGE_REQS.map((r,idx)=>{
+    const emp = (EMPLOYEES||[]).find(e=>e.account===r.account) || {};
+    // 小工具：输出“旧 → 新”，仅当该字段在申请里存在
+    const diff = (key, label)=>{
+      if(!(r.fields) || !(key in r.fields)) return "";
+      const oldVal = (emp[key] ?? "—");
+      const newVal = (r.fields[key] ?? "（空）");
+      return `<div class="tag" style="display:block;margin:2px 0">${label}：<span>${oldVal}</span> → <strong>${newVal}</strong></div>`;
+    };
+    const diffBlock = [
+      diff('name','名称'),
+      diff('phone','手机号'),
+      diff('role','权限'),
+      diff('desc','描述'),
+      diff('password','密码')
+    ].filter(Boolean).join("");
+
+    return `
+      <tr>
+        <td>${r.id}</td>
+        <td>${r.account}</td>
+        <td>${r.submittedAt||"—"}</td>
+        <td>${diffBlock || '<span class="muted">无变更字段</span>'}</td>
+        <td>
+          <div class="ops">
+            <button class="pill" onclick="approveEmpRequest(${idx})">确认同步</button>
+            <button class="pill" onclick="rejectEmpRequest(${idx})">拒绝</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// 确认：把申请里的 fields 合并进对应员工，并从申请池删除
+window.approveEmpRequest = function(idx){
+  const r = EMP_CHANGE_REQS[idx];
+  if(!r){ toast('未找到该申请'); return; }
+  const empIdx = EMPLOYEES.findIndex(e=>e.account===r.account);
+  if(empIdx===-1){
+    toast('员工不存在，已移除此申请');
+    EMP_CHANGE_REQS.splice(idx,1);
+    renderEmpReviewTable();
+    return;
+  }
+  const before = {...EMPLOYEES[empIdx]};
+  const after  = {...EMPLOYEES[empIdx], ...(r.fields||{})};
+  const changes = diffFields(before, after);
+
+  EMPLOYEES[empIdx] = after;
+  EMP_CHANGE_REQS.splice(idx,1);
+
+  if(Object.keys(changes).length){
+    logEmpChange(before.account, changes, `员工申请-通过（${r.id}）`);
+  }
+
+  toast('已同步员工信息');
+  renderEmployees();
+  renderEmpReviewTable();
+};
+
+
+// 拒绝：仅删除这条申请
+window.rejectEmpRequest = function(idx){
+  if(!EMP_CHANGE_REQS[idx]){ toast('未找到该申请'); return; }
+  EMP_CHANGE_REQS.splice(idx,1);
+  toast('已拒绝该申请');
+  renderEmpReviewTable();
+};
+
+
+function empDeactivate(i){
+  const before = {...EMPLOYEES[i]};
+  EMPLOYEES[i].status = EMPLOYEES[i].status==="在职" ? "离职" : "在职";
+  const after = EMPLOYEES[i];
+  const changes = diffFields(before, after, ["status"]);
+  if(Object.keys(changes).length){ logEmpChange(before.account, changes, "状态变更"); }
+  toast("状态已更新"); 
+  renderEmployees();
+}
+
+
+function empDelete(i){ EMPLOYEES.splice(i,1); toast("已删除员工"); renderEmployees(); renderKPI(); }
+
+$("btnCtSearch").onclick = renderContracts;
+function renderContracts(){
+  const q=$("ctQ").value.trim(), st=$("ctStatus").value;
+  let list=[...CONTRACTS];
+  if(q) list=list.filter(c=> matchesContractKeyword(c, q));
+  if(st) list=list.filter(c=> c.status===st);
+  $("ctBody").innerHTML = list.map((c,i)=>`
+    <tr>
+      <td>${c.id}</td>
+      <td>${c.merchant}</td>
+      <td>${c.serviceName||"—"}</td>
+      <td>${c.serviceArea||"—"}</td>
+      <td>${c.start} ~ ${c.end}</td>
+      <td>${badge(c.status)}</td>
+      <td><div class="ops">
+        <button class="pill" onclick="viewContract(${i})">查看详情</button>
+        ${c.status==="待确认" ? `<button class="pill" onclick="confirmContract(${i})">确认</button>` : ""}
+        ${c.status!=="已取消" ? `<button class="pill" onclick="pauseContract(${i})">暂停</button>` : ""}
+        ${c.status==="暂停" ? `<button class="pill" onclick="resumeContract(${i})">恢复</button>` : ""}
+        ${c.status!=="已取消" ? `<button class="pill" onclick="cancelContract(${i})">取消</button>` : ""}
+        <button class="pill" onclick="delContract(${i})">删除</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+function viewContract(i){
+  const c=CONTRACTS[i];
+  openModal("合同详情", `
+    <div class="grid2">
+      <div><div class="tag">合同ID</div><div>${c.id}</div></div>
+      <div><div class="tag">状态</div><div>${c.status}</div></div>
+      <div><div class="tag">服务商名称</div><div>${c.provider}</div></div>
+      <div><div class="tag">服务名称</div><div>${c.serviceName||"—"}</div></div>
+      <div><div class="tag">服务区域</div><div>${c.serviceArea||"—"}</div></div>
+      <div><div class="tag">服务地点</div><div>${c.serviceLocation||"—"}</div></div>
+      <div><div class="tag">联系人</div><div>${c.contact||"—"}</div></div>
+      <div><div class="tag">联系电话</div><div>${c.contactPhone||c.merchantPhone||"—"}</div></div>
+      <div><div class="tag">商户名称</div><div>${c.merchant}</div></div>
+      <div><div class="tag">商户联系电话</div><div>${c.merchantPhone||"—"}</div></div>
+      <div class="full"><div class="tag">服务起止日期</div><div>${c.start} ~ ${c.end}</div></div>
+      <div class="full"><div class="tag">条款</div><div class="muted">${c.terms||"—"}</div></div>
+      ${c.pauseReason? `<div class="full"><div class="tag">最近暂停原因</div><div class="muted">${c.pauseReason}</div></div>`:""}
+      ${c.cancelReason? `<div class="full"><div class="tag">取消原因</div><div class="muted">${c.cancelReason}</div></div>`:""}
+    </div>
+  `);
+}
+function confirmContract(i){ CONTRACTS[i].status="已确认"; toast("合同已确认"); renderContracts(); renderKPI(); }
+function pauseContract(i){
+  openModal("暂停合同", `<div class="tag">请填写暂停原因 *</div><textarea id="pauseReason" placeholder="例如：履约异常/商户欠费/内部调整等"></textarea>`, `<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="doPause(${i})">提交</button>`);
+}
+function doPause(i){
+  const r=($("pauseReason").value||"").trim(); if(!r){ toast("请填写暂停原因"); return; }
+  CONTRACTS[i].status="暂停"; CONTRACTS[i].pauseReason=r; closeModal(); toast("已暂停合同"); renderContracts(); renderKPI();
+}
+function resumeContract(i){ CONTRACTS[i].status="已确认"; CONTRACTS[i].pauseReason = CONTRACTS[i].pauseReason || "（历史）"; toast("已恢复合同"); renderContracts(); renderKPI(); }
+function cancelContract(i){
+  openModal("取消合同", `<div class="tag">请填写取消原因 *</div><textarea id="cancelReason" placeholder="例如：违反条款/合作终止等"></textarea>`, `<button class="btn" onclick="closeModal()">返回</button><button class="btn primary" onclick="doCancel(${i})">确认取消</button>`);
+}
+function doCancel(i){
+  const r=($("cancelReason").value||"").trim(); if(!r){ toast("请填写取消原因"); return; }
+  CONTRACTS[i].status="已取消"; CONTRACTS[i].cancelReason=r; closeModal(); toast("合同已取消"); renderContracts(); renderKPI();
+}
+function delContract(i){ CONTRACTS.splice(i,1); toast("已删除合同"); renderContracts(); renderKPI(); }
+
+$("btnOdFilter").onclick = renderOrders;
+function renderOrders(){
+  const st=$("odStatus").value;
+  const q=$("odQ") ? $("odQ").value.trim() : "";
+  let list=[...ORDERS];
+  if(q) list=list.filter(o=> matchesOrderKeyword(o, q));
+  if(st) list=list.filter(o=> o.status===st);
+  $("odBody").innerHTML = list.map((o,i)=>`
+    <tr>
+      <td>${o.id}</td>
+      <td>${orderServiceName(o)}</td>
+      <td>${orderProduct(o)}</td>
+      <td>${o.merchant}</td>
+      <td>${o.serviceArea||"—"}</td>
+      <td>${badge(o.status)}</td>
+      <td>${o.customerName}</td>
+      <td>${o.customerPhone}</td>
+      <td><div class="ops">
+        ${o.status==="待接受" ? `<button class="pill" onclick="acceptOrder(${i})" ${PROVIDER.status!=="在营"?'disabled':''}>接受</button>`:""}
+        ${o.status!=="已取消" ? `<button class="pill" onclick="dispatchOrder(${i})">派工</button>`:""}
+        ${o.status==="已派工" ? `<button class="pill" onclick="receiveOrder(${i})">确认收件</button>`:""}
+        <button class="pill" onclick="finishOrder(${i})">完成</button>
+        <button class="pill" onclick="cancelOrder(${i})">取消</button>
+        <button class="pill" onclick="viewOrder(${i})">查看</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+function acceptOrder(i){ if(PROVIDER.status!=="在营"){ toast("平台已暂停，禁止接单"); return; } ORDERS[i].status="已接受"; ORDERS[i].acceptTime=fmt(new Date()); toast("已接受服务单"); renderOrders(); }
+function dispatchOrder(i){ ORDERS[i].status="已派工"; ORDERS[i].dispatchTime=fmt(new Date()); if(!ORDERS[i].engineer){ ORDERS[i].engineer={name:"自动派工-张师傅", phone:"13600000000"} } toast("已派工"); renderOrders(); }
+function receiveOrder(i){ ORDERS[i].status="已收件"; ORDERS[i].receiveTime=fmt(new Date()); toast("已收件"); renderOrders(); }
+function finishOrder(i){ ORDERS[i].status="已完成"; ORDERS[i].completeTime=fmt(new Date()); toast("已完成"); renderOrders(); }
+function cancelOrder(i){ ORDERS[i].status="已取消"; toast("已取消"); renderOrders(); }
+function row(label, value){ return `<div><div class="tag">${label}</div><div>${value || "—"}</div></div>`; }
+function rowFull(label, value){ return `<div class="full"><div class="tag">${label}</div><div>${value || "—"}</div></div>`; }
+function sectionTitle(t){ return `<div class="full" style="margin-top:6px;"><div class="tag" style="font-weight:800;color:#334155">${t}</div></div>`; }
+function viewOrder(i){ 
+  const o=ORDERS[i]; 
+  const device = o.device||{};
+  const eng = o.engineer||{};
+  const engSkills = Array.isArray(eng.skills) ? eng.skills.join(" / ") : (eng.skills||"—");
+  const lg = o.logistics||{};
+  const timeline = [
+    o.requestTime?`创建：${o.requestTime}`:"",
+    o.acceptTime?`接受：${o.acceptTime}`:"",
+    o.dispatchTime?`派工：${o.dispatchTime}`:"",
+    o.receiveTime?`收件：${o.receiveTime}`:"",
+    o.completeTime?`完成：${o.completeTime}`:""
+  ].filter(Boolean).join(" ｜ ");
+  const attaches = (o.attachments||[]).map((x,idx)=>`<span class="pill" title="${x}">附件${idx+1}</span>`).join(" ") || "—";
+  openModal("服务单详情", `
+    <div class="grid2">
+      ${row("服务单ID", o.id)} ${row("状态", o.status)}
+      ${row("服务名称", orderServiceName(o))} ${row("产品", orderProduct(o))}
+      ${row("商户", o.merchant)} ${row("服务地区", o.serviceArea||"—")}
+      ${row("顾客姓名", o.customerName)} ${row("联系电话", o.customerPhone)}
+      ${row("预约时间", o.appointment)} ${row("创建时间", o.requestTime)}
+      ${rowFull("维修地址", o.address)}
+      ${sectionTitle("设备信息")}
+      ${row("设备类型", device.type)} ${row("品牌/型号", (device.brand||"")+" "+(device.model||""))}
+      ${row("序列号", device.sn||"—")} ${row("历史维修次数", o.historyCount || 0)}
+      ${sectionTitle("问题详情")}
+      ${rowFull("问题描述", o.problem)}
+      ${rowFull("附件", attaches)}
+      ${sectionTitle("服务与SLA")}
+      ${row("SLA", o.sla)} ${row("费用预估", o.feeEstimate)}
+      ${sectionTitle("派工与联系人")}
+      ${row("工程师编号", eng.id||"—")} ${row("工程师", eng.name||"—")}
+      ${row("工作状态", eng.workStatus||"—")} ${row("负责区域", eng.area||"—")}
+      ${row("工程师电话", eng.phone||"—")} ${row("工程师账号", eng.account||"—")}
+      ${rowFull("技能特长", engSkills)}
+      ${rowFull("调度备注", o.notes||"—")}
+      ${sectionTitle("物流信息（如为寄修）")}
+      ${row("运单号", lg.waybill||"—")} ${row("重量", lg.weight||"—")}
+      ${rowFull("物流备注", lg.remark||"—")}
+      ${sectionTitle("时间线")}
+      ${rowFull("进度", timeline || "—")}
+      <div class="full subtle muted">以上为演示数据，字段仅用于界面展示。</div>
+    </div>
+  `, getOrderDetailFooter(i)); 
+}
+
+function initApp(){ switchRoute("auth"); renderEmployees(); renderContracts(); renderOrders(); }
+window.addEventListener("DOMContentLoaded", ()=>{
+  initApp();
+  document.addEventListener('input', function(e){ if(e.target && e.target.id==='accAddr'){ autoResize(e.target); } }, true);
+});
+
+/* ===== 逻辑修复补丁（2025-10-23） ===== */
+(function(){
+  // 判断是否为寄修
+  function isMailIn(o){
+    const t1 = (o.item||"") + " " + (o.appointment||"");
+    return /寄修/.test(t1);
+  }
+
+  // 详情弹窗底部按钮：只在这里显示“接受”
+  window.getOrderDetailFooter = function(i){
+    const o = ORDERS[i];
+    const acceptBtn = (o.status==="待接受")
+      ? `<button class="btn primary" onclick="acceptOrder(${i});">${PROVIDER.status!=="在营"?"接受（不可用）":"接受"}</button>` : "";
+    // 关闭按钮始终存在且在最右；接受按钮自然在其左侧
+    return `${acceptBtn}<button class="btn" onclick="closeModal()">关闭</button>`;
+  };
+
+  
+  // 覆盖：渲染服务单列表的操作按钮（首屏初始化规则 + 列表中无“接受”）
+  // 初始化规则（仅首次进入“服务单”时生效）：
+  // 1) 手机维修：只显示【取消】【查看】
+  // 2) 冰箱维修：只显示【派工】【取消】【查看】
+  // 3) 洗衣机维修（寄修）：状态置为“已接受”，只显示【确认收件】【取消】【查看】
+  window.renderOrders = function(){
+    // 首次渲染标记
+    if (window.OD_FIRST_RENDER === undefined) window.OD_FIRST_RENDER = true;
+    const isInit = window.OD_FIRST_RENDER === true;
+
+    const st = $("odStatus").value;
+    let list=[...ORDERS];
+    if(st) list=list.filter(o=> o.status===st);
+    $("odBody").innerHTML = list.map((o,i)=>{
+      const mailIn = isMailIn(o);
+      let btns = [];
+
+      // ===== 首屏初始化限定按钮 =====
+      if (isInit) {
+        if (o.item === "手机维修") {
+          // 只保留 取消 + 查看
+          if(o.status!=="已取消" && o.status!=="已完成"){
+            btns.push(`<button class="pill" onclick="cancelOrder(${i})">取消</button>`);
+          }
+          btns.push(`<button class="pill" onclick="viewOrder(${i})">查看</button>`);
+        } else if (o.item === "冰箱维修") {
+          // 只保留 派工 + 取消 + 查看
+          btns.push(`<button class="pill" onclick="dispatchOrder(${i})">派工</button>`);
+          if(o.status!=="已取消" && o.status!=="已完成"){
+            btns.push(`<button class="pill" onclick="cancelOrder(${i})">取消</button>`);
+          }
+          btns.push(`<button class="pill" onclick="viewOrder(${i})">查看</button>`);
+        } else if (o.item === "洗衣机维修（寄修）") {
+          // 状态置为已接受；只保留 确认收件 + 取消 + 查看（不出现“派工”）
+          if (o.status !== "已接受") { o.status = "已接受"; }
+          btns.push(`<button class="pill" onclick="receiveOrder(${i})">确认收件</button>`);
+          if(o.status!=="已取消" && o.status!=="已完成"){
+            btns.push(`<button class="pill" onclick="cancelOrder(${i})">取消</button>`);
+          }
+          btns.push(`<button class="pill" onclick="viewOrder(${i})">查看</button>`);
+        } else {
+          // 其它服务项按常规规则
+          if(!mailIn){
+            if(o.status==="已接受"){ btns.push(`<button class="pill" onclick="dispatchOrder(${i})">派工</button>`); }
+            if(o.status==="已派工"){ btns.push(`<button class="pill" onclick="finishOrder(${i})">完成</button>`); }
+          }else{
+            if(o.status==="已接受"){ btns.push(`<button class="pill" onclick="receiveOrder(${i})">确认收件</button>`); }
+            if(o.status==="已收件"){ btns.push(`<button class="pill" onclick="finishOrder(${i})">完成</button>`); }
+          }
+          if(o.status!=="已取消" && o.status!=="已完成"){
+            btns.push(`<button class="pill" onclick="cancelOrder(${i})">取消</button>`);
+          }
+          btns.push(`<button class="pill" onclick="viewOrder(${i})">查看</button>`);
+        }
+      } else {
+        // ===== 非首屏渲染：维持原有逻辑，不显示“接受”，流程同之前规则 =====
+        if(!mailIn){
+          if(o.status==="已接受"){ btns.push(`<button class="pill" onclick="dispatchOrder(${i})">派工</button>`); }
+          if(o.status==="已派工"){ btns.push(`<button class="pill" onclick="finishOrder(${i})">完成</button>`); }
+        }else{
+          if(o.status==="已接受"){ btns.push(`<button class="pill" onclick="receiveOrder(${i})">确认收件</button>`); }
+          if(o.status==="已收件"){ btns.push(`<button class="pill" onclick="finishOrder(${i})">完成</button>`); }
+        }
+        if(o.status!=="已取消" && o.status!=="已完成"){
+          btns.push(`<button class="pill" onclick="cancelOrder(${i})">取消</button>`);
+        }
+        btns.push(`<button class="pill" onclick="viewOrder(${i})">查看</button>`);
+      }
+
+      return `
+        <tr>
+          <td>${o.id}</td>
+          <td>${o.merchant}</td>
+          <td>${o.item}</td>
+          <td>${badge(o.status)}</td>
+          <td><div class="ops">${btns.join(" ")}</div></td>
+        </tr>
+      `;
+    }).join("");
+
+    // 首次渲染完成后，关闭初始化模式
+    if (isInit) { window.OD_FIRST_RENDER = false; }
+  };
+
+  // 接受逻辑保持不变，仍在详情弹窗底部按钮中显示
+  window.acceptOrder = function(i){
+    if(PROVIDER.status!=="在营"){ toast("平台已暂停该服务商，无法接受。"); return; }
+    const o = ORDERS[i];
+    if(o.status!=="待接受"){ toast("当前状态不可接受。"); return; }
+    o.status="已接受";
+    o.acceptTime = fmt(new Date());
+    toast("已接受服务单");
+    closeModal();
+    renderOrders();
+  };
+
+  window.dispatchOrder = function(i){
+    const o = ORDERS[i];
+    if(isMailIn(o)){ toast("寄修单不需要派工。"); return; }
+    if(o.status!=="已接受"){ toast("需先在详情中接受，再派工。"); return; }
+    o.status="已派工";
+    o.dispatchTime = fmt(new Date());
+    if(!o.engineer){ o.engineer = {name:"自动派工-张师傅", phone:"13600000000"}; }
+    toast("已派工");
+    renderOrders();
+  };
+
+  window.receiveOrder = function(i){
+    const o = ORDERS[i];
+    if(!isMailIn(o)){ toast("上门单无需确认收件。"); return; }
+    // 兼容旧数据：寄修若误入“已派工”，也允许收件
+    if(o.status!=="已接受" && o.status!=="已派工"){ toast("需先在详情中接受，再确认收件。"); return; }
+    o.status="已收件";
+    o.receiveTime = fmt(new Date());
+    if(!o.logistics){ o.logistics = {waybill:"", weight:"", remark:""}; }
+    toast("已收件");
+    renderOrders();
+  };
+
+  window.finishOrder = function(i){
+    const o = ORDERS[i];
+    const mailIn = isMailIn(o);
+    if(mailIn && o.status!=="已收件"){ toast("寄修需先确认收件后才能完成。"); return; }
+    if(!mailIn && o.status!=="已派工"){ toast("上门单需先派工后才能完成。"); return; }
+    o.status="已完成";
+    o.completeTime = fmt(new Date());
+    toast("已完成");
+    renderOrders();
+  };
+
+  // 覆盖：取消服务单，新增“取消原因”弹窗
+  window.cancelOrder = function(i){
+    const o = ORDERS[i];
+    if(o.status==="已完成"){ toast("已完成的服务单不可取消。"); return; }
+    const body = `
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div>服务单：<strong>${o.id}</strong>（${o.item}）</div>
+        <label style="font-weight:600;">取消原因</label>
+        <textarea id="cancelReason" placeholder="请输入取消原因" oninput="autoResize(this)" style="min-height:90px;"></textarea>
+      </div>`;
+    const footer = `
+      <button class="btn" onclick="closeModal()">关闭</button>
+      <button class="btn primary" onclick="applyOrderCancel(${i})">确认取消</button>`;
+    openModal("取消服务单", body, footer);
+    setTimeout(()=>{ const ta = document.getElementById('cancelReason'); if(ta){ ta.focus(); }}, 50);
+  };
+
+  // 全局：确认取消服务单（解决内联 IIFE 无法访问局部变量导致的“按钮无效”问题）
+  window.applyOrderCancel = function(i){
+    var ta = document.getElementById('cancelReason');
+    var reason = (ta && ta.value ? ta.value : '').trim();
+    if(!reason){ toast('请填写取消原因'); return; }
+    var o = ORDERS[i];
+    if(!o){ toast('未找到该服务单'); return; }
+    o.status = '已取消';
+    o.cancelReason = reason;
+    o.cancelTime = fmt(new Date());
+    closeModal();
+    toast('已取消：' + reason);
+    renderOrders();
+  };
+})();
+
+/* ===== 合同逻辑修复补丁（2025-10-23-合同） ===== */
+(function(){
+  // 仅在“查看详情”弹窗底部显示“确认”按钮；列表中不再显示
+  window.getContractDetailFooter = function(i){
+    const c = CONTRACTS[i];
+    const confirmBtn = (c.status==="待确认")
+      ? `<button class="btn primary" onclick="confirmContract(${i});">确认</button>`
+      : "";
+    return `${confirmBtn}<button class="btn" onclick="closeModal()">关闭</button>`;
+  };
+
+  // 覆盖“查看详情”使其带上动态页脚
+  window.viewContract = function(i){
+    const c=CONTRACTS[i];
+    const bodyHTML = `
+      <div class="grid2">
+        <div><div class="tag">合同ID</div><div>${c.id}</div></div>
+        <div><div class="tag">状态</div><div>${c.status}</div></div>
+        <div><div class="tag">服务商名称</div><div>${c.provider}</div></div>
+        <div><div class="tag">服务名称</div><div>${c.serviceName||"—"}</div></div>
+        <div><div class="tag">服务区域</div><div>${c.serviceArea||"—"}</div></div>
+        <div><div class="tag">服务地点</div><div>${c.serviceLocation||"—"}</div></div>
+        <div><div class="tag">联系人</div><div>${c.contact||"—"}</div></div>
+        <div><div class="tag">联系电话</div><div>${c.contactPhone||c.merchantPhone||"—"}</div></div>
+        <div><div class="tag">商户名称</div><div>${c.merchant}</div></div>
+        <div><div class="tag">商户联系电话</div><div>${c.merchantPhone||"—"}</div></div>
+        <div class="full"><div class="tag">服务起止日期</div><div>${c.start} ~ ${c.end}</div></div>
+        <div class="full"><div class="tag">条款</div><div class="muted">${c.terms||"—"}</div></div>
+        ${c.pauseReason? `<div class="full"><div class="tag">最近暂停原因</div><div class="muted">${c.pauseReason}</div></div>`:""}
+        ${c.cancelReason? `<div class="full"><div class="tag">取消原因</div><div class="muted">${c.cancelReason}</div></div>`:""}
+      </div>
+    `;
+    openModal("合同详情", bodyHTML, getContractDetailFooter(i));
+  };
+
+  // 覆盖合同列表渲染：严格按状态控制按钮，且列表不出现“确认”
+  window.renderContracts = function(){
+    const q=document.getElementById("ctQ").value.trim(), st=document.getElementById("ctStatus").value;
+    let list=[...CONTRACTS];
+    if(q) list=list.filter(c=> matchesContractKeyword(c, q));
+    if(st) list=list.filter(c=> c.status===st);
+    document.getElementById("ctBody").innerHTML = list.map((c,i)=>{
+      const btns=[];
+      btns.push(`<button class="pill" onclick="viewContract(${i})">查看详情</button>`);
+      if(c.status==="待确认"){
+        // 必须先查看再确认；此处仅提供取消
+        btns.push(`<button class="pill" onclick="cancelContract(${i})">取消</button>`);
+      } else if(c.status==="已确认"){
+        btns.push(`<button class="pill" onclick="pauseContract(${i})">暂停</button>`);
+        btns.push(`<button class="pill" onclick="cancelContract(${i})">取消</button>`);
+      } else if(c.status==="暂停"){
+        btns.push(`<button class="pill" onclick="resumeContract(${i})">恢复</button>`);
+        btns.push(`<button class="pill" onclick="cancelContract(${i})">取消</button>`);
+      } else if(c.status==="已取消"){
+        btns.push(`<button class="pill" onclick="delContract(${i})">删除</button>`);
+      }
+      return `
+        <tr>
+          <td>${c.id}</td>
+          <td>${c.merchant}</td>
+          <td>${c.serviceName||"—"}</td>
+          <td>${c.serviceArea||"—"}</td>
+          <td>${c.start} ~ ${c.end}</td>
+          <td>${badge(c.status)}</td>
+          <td><div class="ops">${btns.join(" ")}</div></td>
+        </tr>
+      `;
+    }).join("");
+  };
+
+  // 行为守卫：防止非法状态流转
+  window.confirmContract = function(i){
+    const c = CONTRACTS[i];
+    if(c.status!=="待确认"){ toast("当前状态不可确认。"); return; }
+    c.status="已确认";
+    c.pauseReason=null; c.cancelReason=null;
+    closeModal();
+    toast("合同已确认");
+    renderContracts(); renderKPI();
+  };
+
+  window.pauseContract = function(i){
+    const c = CONTRACTS[i];
+    if(c.status!=="已确认"){ toast("需先确认合同后才能暂停。"); return; }
+    openModal("暂停合同", `<div class="tag">请填写暂停原因 *</div><textarea id="pauseReason" placeholder="例如：履约异常/商户欠费/内部调整等"></textarea>`,
+      `<button class="btn" onclick="closeModal()">取消</button>
+       <button class="btn primary" onclick="(function(){
+          const r=(document.getElementById('pauseReason').value||'').trim();
+          if(!r){ toast('请填写暂停原因'); return; }
+          c.status='暂停'; c.pauseReason=r;
+          closeModal(); toast('已暂停合同'); renderContracts(); renderKPI();
+        })()">提交</button>`);
+  };
+
+  window.resumeContract = function(i){
+    const c = CONTRACTS[i];
+    if(c.status!=="暂停"){ toast("当前状态不可恢复。"); return; }
+    c.status="已确认";
+    toast("已恢复合同");
+    renderContracts(); renderKPI();
+  };
+
+  window.cancelContract = function(i){
+    const c = CONTRACTS[i];
+    if(c.status==="已取消"){ toast("合同已取消，无需重复操作。"); return; }
+    openModal("取消合同", `<div class="tag">请填写取消原因 *</div><textarea id="cancelReason" placeholder="例如：违反条款/合作终止等"></textarea>`,
+      `<button class="btn" onclick="closeModal()">返回</button>
+       <button class="btn primary" onclick="(function(){
+         const r=(document.getElementById('cancelReason').value||'').trim();
+         if(!r){ toast('请填写取消原因'); return; }
+         c.status='已取消'; c.cancelReason=r;
+         closeModal(); toast('合同已取消'); renderContracts(); renderKPI();
+       })()">确认取消</button>`);
+  };
+
+  window.delContract = function(i){
+    const c = CONTRACTS[i];
+    if(c.status!=="已取消"){ toast("仅可删除已取消的合同。"); return; }
+    CONTRACTS.splice(i,1);
+    toast("已删除合同");
+    renderContracts(); renderKPI();
+  };
+
+  // 若用户当前就在“服务合同”页，则立即按修复规则重绘一次
+  if (document.querySelector('#page-contracts.section.active')) {
+    renderContracts();
+  }
+})();
+
+/* ===== 修订补丁（2025-10-23-二次修复） ===== */
+(function(){
+  // ---- 修复1：合同“暂停/取消”弹窗按钮无法提交（作用域问题） ----
+  // 使用全局函数承接按钮点击，避免内联 IIFE 访问不到局部变量。
+  window.applyPause = function(i){
+    const ta = document.getElementById('pauseReason');
+    const r = (ta && ta.value || '').trim();
+    if(!r){ toast('请填写暂停原因'); return; }
+    const c = CONTRACTS[i];
+    c.status = '暂停';
+    c.pauseReason = r;
+    closeModal();
+    toast('已暂停合同');
+    renderContracts(); renderKPI();
+  };
+  window.applyCancel = function(i){
+    const ta = document.getElementById('cancelReason');
+    const r = (ta && ta.value || '').trim();
+    if(!r){ toast('请填写取消原因'); return; }
+    const c = CONTRACTS[i];
+    c.status = '已取消';
+    c.cancelReason = r;
+    closeModal();
+    toast('合同已取消');
+    renderContracts(); renderKPI();
+  };
+  // 覆盖“暂停/取消”以使用新的提交函数
+  window.pauseContract = function(i){
+    const c = CONTRACTS[i];
+    if(c.status!=='已确认'){ toast('需先确认合同后才能暂停。'); return; }
+    openModal(
+      '暂停合同',
+      '<div class="tag">请填写暂停原因 *</div><textarea id="pauseReason" placeholder="例如：履约异常/商户欠费/内部调整等"></textarea>',
+      '<button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="applyPause('+i+')">提交</button>'
+    );
+  };
+  window.cancelContract = function(i){
+    const c = CONTRACTS[i];
+    if(c.status==='已取消'){ toast('合同已取消，无需重复操作。'); return; }
+    openModal(
+      '取消合同',
+      '<div class="tag">请填写取消原因 *</div><textarea id="cancelReason" placeholder="例如：违反条款/合作终止等"></textarea>',
+      '<button class="btn" onclick="closeModal()">返回</button><button class="btn primary" onclick="applyCancel('+i+')">确认取消</button>'
+    );
+  };
+
+  // ---- 修复2：“服务单/服务合同”首屏初始操作列表与代码逻辑一致性 ----
+  // 对“服务单”采用“首次可见渲染”策略：只有当用户首次进入该页面时，才应用初始化规则。
+  function isMailIn(o){
+    const t1 = (o.item||'') + ' ' + (o.appointment||'');
+    return /寄修/.test(t1);
+  }
+  
+  window.renderOrders = function(){
+    // 首次“可见”渲染判断：页面处于激活状态且未完成过首访初始化
+    const page = document.querySelector('#page-orders');
+    const isActive = page ? page.classList.contains('active') : false;
+    if(window.OD_FIRST_VISIT === undefined) window.OD_FIRST_VISIT = true;
+    const isInit = isActive && window.OD_FIRST_VISIT;
+
+    const st = document.getElementById('odStatus').value;
+    const q = (document.getElementById('odQ')?.value || '').trim();
+    let list = [...ORDERS];
+    if(q) list = list.filter(o => matchesOrderKeyword(o, q));
+    if(st) list = list.filter(o => o.status === st);
+
+    document.getElementById('odBody').innerHTML = list.map((o,i)=>{
+      const mailIn = isMailIn(o);
+      let btns = [];
+
+      if (isInit) {
+        if (o.item === '手机维修') {
+          // 只有 查看 + 取消（取消在查看右边）
+          btns.push('<button class="pill" onclick="viewOrder('+i+')">查看</button>');
+          if(o.status!=='已取消' && o.status!=='已完成'){
+            btns.push('<button class="pill" onclick="cancelOrder('+i+')">取消</button>');
+          }
+        } else if (o.item === '冰箱维修') {
+          // 派工 + 查看 + 取消
+          btns.push('<button class="pill" onclick="dispatchOrder('+i+')">派工</button>');
+          btns.push('<button class="pill" onclick="viewOrder('+i+')">查看</button>');
+          if(o.status!=='已取消' && o.status!=='已完成'){
+            btns.push('<button class="pill" onclick="cancelOrder('+i+')">取消</button>');
+          }
+        } else if (o.item === '洗衣机维修（寄修）') {
+          // （初始化时置为已接受）确认收件 + 查看 + 取消
+          if (o.status !== '已接受') { o.status = '已接受'; }
+          btns.push('<button class="pill" onclick="receiveOrder('+i+')">确认收件</button>');
+          btns.push('<button class="pill" onclick="viewOrder('+i+')">查看</button>');
+          if(o.status!=='已取消' && o.status!=='已完成'){
+            btns.push('<button class="pill" onclick="cancelOrder('+i+')">取消</button>');
+          }
+        } else {
+          // 其它服务项：流程按钮（若有） + 查看 + 取消
+          if(!mailIn){
+            if(o.status==='已接受'){ btns.push('<button class="pill" onclick="dispatchOrder('+i+')">派工</button>'); }
+            if(o.status==='已派工'){ btns.push('<button class="pill" onclick="finishOrder('+i+')">完成</button>'); }
+          }else{
+            if(o.status==='已接受'){ btns.push('<button class="pill" onclick="receiveOrder('+i+')">确认收件</button>'); }
+            if(o.status==='已收件'){ btns.push('<button class="pill" onclick="finishOrder('+i+')">完成</button>'); }
+          }
+          btns.push('<button class="pill" onclick="viewOrder('+i+')">查看</button>');
+          if(o.status!=='已取消' && o.status!=='已完成'){
+            btns.push('<button class="pill" onclick="cancelOrder('+i+')">取消</button>');
+          }
+        }
+      } else {
+        // 非首屏渲染：流程按钮（若有） + 查看 + 取消
+        if(!mailIn){
+          if(o.status==='已接受'){ btns.push('<button class="pill" onclick="dispatchOrder('+i+')">派工</button>'); }
+          if(o.status==='已派工'){ btns.push('<button class="pill" onclick="finishOrder('+i+')">完成</button>'); }
+        }else{
+          if(o.status==='已接受'){ btns.push('<button class="pill" onclick="receiveOrder('+i+')">确认收件</button>'); }
+          if(o.status==='已收件'){ btns.push('<button class="pill" onclick="finishOrder('+i+')">完成</button>'); }
+        }
+        // ——关键顺序：先“查看”，再“取消”
+        btns.push('<button class="pill" onclick="viewOrder('+i+')">查看</button>');
+        if(o.status!=='已取消' && o.status!=='已完成'){
+          btns.push('<button class="pill" onclick="cancelOrder('+i+')">取消</button>');
+        }
+      }
+
+      return '<tr>'
+        + '<td>'+o.id+'</td>'
+        + '<td>'+orderServiceName(o)+'</td>'
+        + '<td>'+orderProduct(o)+'</td>'
+        + '<td>'+o.merchant+'</td>'
+        + '<td>'+(o.serviceArea||'—')+'</td>'
+        + '<td>'+badge(o.status)+'</td>'
+        + '<td>'+o.customerName+'</td>'
+        + '<td>'+o.customerPhone+'</td>'
+        + '<td><div class="ops">'+btns.join(' ')+'</div></td>'
+        + '</tr>';
+    }).join('');
+
+    if (isInit) { window.OD_FIRST_VISIT = false; }
+  };
+
+
+  // 进入“服务单”页时立即按新规则渲染一次
+  const _oldSwitchRoute = window.switchRoute;
+  window.switchRoute = function(route){
+    _oldSwitchRoute(route);
+    if(route==='orders'){ renderOrders(); }
+    if(route==='contracts'){ renderContracts(); } // 确保合同页也按最新按钮策略重绘
+  };
+})();
+
+/* ===== 新增功能：派工前选择工程师（2025-10-23） ===== */
+(function(){
+  // 列出可派工程师：角色=工程师 且 非离职
+  function listEngineers(){
+    return (EMPLOYEES||[]).filter(e => e.role === '工程师' && e.status !== '离职');
+  }
+  function formatEngineerSkills(skills){
+    if(Array.isArray(skills)){ return skills.join(' / ') || '—'; }
+    return skills || '—';
+  }
+
+  // 打开选择工程师的二级窗口
+  window.openAssignEngineer = function(orderIdx){
+    const engs = listEngineers();
+    if(!engs.length){
+      toast('暂无“工程师”角色的在职员工');
+      return;
+    }
+    const rows = engs.map((e,idx)=>`
+      <label class="pill" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer;">
+        <input type="radio" name="assignEng" value="${e.account}" ${idx===0?'checked':''}/>
+        <div>
+          <div><strong>${e.name}</strong>（${e.engId||e.account}）</div>
+          <div class="muted" style="font-size:12px;">状态：${e.workStatus||'—'} ｜ 区域：${e.serviceArea||'—'} ｜ 电话：${e.phone||'—'}</div>
+          <div class="muted" style="font-size:12px;">技能：${formatEngineerSkills(e.skills)}</div>
+        </div>
+      </label>
+    `).join("");
+
+    openModal(
+      '选择工程师派工',
+      `
+      <div class="grid2">
+        <div class="full subtle">请选择要派出的工程师，并可填写派工备注</div>
+        <div class="full">${rows}</div>
+        <div class="full"><div class="tag">派工备注</div>
+          <textarea id="assignNote" placeholder="例如：携带温控器/预计到达时间/上门前联系等"></textarea>
+        </div>
+      </div>
+      `,
+      `<button class="btn" onclick="closeModal()">取消</button>
+       <button class="btn primary" onclick="applyAssignEngineer(${orderIdx})">确认派工</button>`
+    );
+  };
+
+  // 确认派工：保存到订单并刷新列表
+  window.applyAssignEngineer = function(orderIdx){
+    const o = ORDERS[orderIdx];
+    if(!o){ toast('未找到该服务单'); return; }
+    const sel = document.querySelector('input[name="assignEng"]:checked');
+    if(!sel){ toast('请选择工程师'); return; }
+    const eng = EMPLOYEES.find(e => e.account === sel.value);
+    if(!eng){ toast('工程师不存在'); return; }
+
+    // 状态与时间线
+    o.status = '已派工';
+    o.dispatchTime = fmt(new Date());
+    // 保存被派工程师信息（含账号，电话没有则回退为 —）
+    o.engineer = {
+      id: eng.engId || eng.account,
+      name: eng.name,
+      phone: eng.phone || '—',
+      account: eng.account,
+      workStatus: eng.workStatus || '—',
+      area: eng.serviceArea || '—',
+      skills: Array.isArray(eng.skills) ? [...eng.skills] : (eng.skills || '—')
+    };
+    // 合并备注
+    const note = (document.getElementById('assignNote')?.value || '').trim();
+    if(note){
+      o.notes = (o.notes ? (o.notes + '；') : '') + ('派工备注：' + note);
+    }
+
+    closeModal();
+    toast('已派工给：' + eng.name);
+    renderOrders();
+  };
+
+  // 覆盖：点击“派工”时改为弹出选择工程师窗口
+  // 保留寄修/状态校验
+  function isMailIn(o){
+    const t1 = (o.item||'') + ' ' + (o.appointment||'');
+    return /寄修/.test(t1);
+  }
+  window.dispatchOrder = function(i){
+    const o = ORDERS[i];
+    if(isMailIn(o)){ toast('寄修单不需要派工。'); return; }
+    if(o.status!=='已接受'){ toast('需先在详情中接受，再派工。'); return; }
+    openAssignEngineer(i);
+  };
+
+  // 覆盖：详情页增加“工程师账号”展示（原有工程师姓名/电话保留）
+  const _row = window.row, _rowFull = window.rowFull, _sectionTitle = window.sectionTitle;
+  window.viewOrder = function(i){
+    const o=ORDERS[i]; 
+    const device = o.device||{};
+    const eng = o.engineer||{};
+    const engSkills = Array.isArray(eng.skills) ? eng.skills.join(" / ") : (eng.skills||"—");
+    const lg = o.logistics||{};
+    const timeline = [
+      o.requestTime?`创建：${o.requestTime}`:"",
+      o.acceptTime?`接受：${o.acceptTime}`:"",
+      o.dispatchTime?`派工：${o.dispatchTime}`:"",
+      o.receiveTime?`收件：${o.receiveTime}`:"",
+      o.completeTime?`完成：${o.completeTime}`:""
+    ].filter(Boolean).join(" ｜ ");
+    const attaches = (o.attachments||[]).map((x,idx)=>`<span class="pill" title="${x}">附件${idx+1}</span>`).join(" ") || "—";
+
+    openModal("服务单详情", `
+      <div class="grid2">
+        ${_row("服务单ID", o.id)} ${_row("状态", o.status)}
+        ${_row("服务名称", orderServiceName(o))} ${_row("产品", orderProduct(o))}
+        ${_row("商户", o.merchant)} ${_row("服务地区", o.serviceArea||"—")}
+        ${_row("顾客姓名", o.customerName)} ${_row("联系电话", o.customerPhone)}
+        ${_row("预约时间", o.appointment)} ${_row("创建时间", o.requestTime)}
+        ${_rowFull("维修地址", o.address)}
+
+        ${_sectionTitle("设备信息")}
+        ${_row("设备类型", device.type)} ${_row("品牌/型号", (device.brand||"")+" "+(device.model||""))}
+        ${_row("序列号", device.sn||"—")} ${_row("历史维修次数", o.historyCount || 0)}
+
+        ${_sectionTitle("问题详情")}
+        ${_rowFull("问题描述", o.problem)}
+        ${_rowFull("附件", attaches)}
+
+        ${_sectionTitle("服务与SLA")}
+        ${_row("SLA", o.sla)} ${_row("费用预估", o.feeEstimate)}
+
+        ${_sectionTitle("派工与联系人")}
+        ${_row("工程师编号", eng.id||"—")} ${_row("工程师", eng.name||"—")}
+        ${_row("工作状态", eng.workStatus||"—")} ${_row("负责区域", eng.area||"—")}
+        ${_row("工程师电话", eng.phone||"—")} ${_row("工程师账号", eng.account||"—")}
+        ${_rowFull("技能特长", engSkills)}
+        ${_rowFull("调度备注", o.notes||"—")}
+
+        ${_sectionTitle("物流信息（如为寄修）")}
+        ${_row("运单号", lg.waybill||"—")} ${_row("重量", lg.weight||"—")}
+        ${_rowFull("物流备注", lg.remark||"—")}
+
+        ${_sectionTitle("时间线")}
+        ${_rowFull("进度", timeline || "—")}
+
+        <div class="full subtle muted">以上为演示数据，字段仅用于界面展示。</div>
+      </div>
+    `, getOrderDetailFooter(i));
+  };
+})();
+
+
+// 统一重绑（覆盖早前的 onclick 引用，确保调用最新实现）
+$('btnCtSearch').onclick = (e)=>{ e?.preventDefault?.(); window.renderContracts(); };
+$('btnOdFilter').onclick = (e)=>{ e?.preventDefault?.(); window.renderOrders(); };
+document.getElementById('ctStatus')?.addEventListener('change', ()=> window.renderContracts());
+document.getElementById('odStatus')?.addEventListener('change', ()=> window.renderOrders());
+document.getElementById('odQ')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); window.renderOrders(); } });
+
+</script>
+</body>
+</html>
